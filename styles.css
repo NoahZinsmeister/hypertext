@@ -1,0 +1,8 @@
+@import url('https://fonts.googleapis.com/css?family=Rubik&display=swap');
+
+body {
+  min-height: 100vh;
+  scroll-behavior: smooth;
+  text-rendering: optimizeSpeed;
+  line-height: 1.5;
+}

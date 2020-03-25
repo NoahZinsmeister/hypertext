@@ -1,0 +1,30 @@
+{
+  "name": "sentence-swap",
+  "author": "Noah Zinsmeister",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && next export"
+  },
+  "dependencies": {
+    "@chakra-ui/core": "^0.6.1",
+    "@emotion/core": "^10.0.28",
+    "@emotion/styled": "^10.0.27",
+    "@ethersproject/providers": "^5.0.0-beta.157",
+    "@ethersproject/units": "^5.0.0-beta.132",
+    "@uniswap/sdk": "^2.0.0-beta.21",
+    "@web3-react/core": "^6.0.7",
+    "@web3-react/injected-connector": "^6.0.7",
+    "emotion-theming": "^10.0.27",
+    "next": "^9.3.1",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "react-select": "^3.1.0",
+    "swr": "^0.1.18"
+  },
+  "devDependencies": {
+    "@types/node": "^13.9.3",
+    "@types/react-select": "^3.0.11",
+    "typescript": "^3.8.3"
+  }
+}
