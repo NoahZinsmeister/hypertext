@@ -3,8 +3,8 @@ import { theme } from '@chakra-ui/core'
 export default {
   ...theme,
   fonts: {
-    ...theme.fonts,
-    heading: `Rubik,${theme.fonts.heading}`,
-    body: `Rubik,${theme.fonts.heading}`
+    heading: `'B612', sans-serif`,
+    body: `'B612', sans-serif`,
+    mono: `'B612 Mono', monospace`
   }
 }
