@@ -23,7 +23,7 @@ import { COLOR, DEFAULT_DEADLINE, DEFAULT_SLIPPAGE } from '../constants'
 import { useBodyKeyDown } from '../hooks'
 import { useApproveMax, useDeadline, useSlippage } from '../context'
 
-export default function Settings({ isOpen, onClose }) {
+export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }): JSX.Element {
   const { colorMode, toggleColorMode } = useColorMode()
   const { fonts } = useTheme()
 
@@ -61,7 +61,12 @@ export default function Settings({ isOpen, onClose }) {
                 </Slider>
                 <Stack direction="row" minHeight="1.5rem">
                   {deadline !== DEFAULT_DEADLINE && (
-                    <Button size="xs" onClick={() => setDeadline(DEFAULT_DEADLINE)}>
+                    <Button
+                      size="xs"
+                      onClick={(): void => {
+                        setDeadline(DEFAULT_DEADLINE)
+                      }}
+                    >
                       Reset
                     </Button>
                   )}
@@ -81,7 +86,12 @@ export default function Settings({ isOpen, onClose }) {
                 </Slider>
                 <Stack direction="row" minHeight="1.5rem">
                   {slippage !== DEFAULT_SLIPPAGE && (
-                    <Button size="xs" onClick={() => setSlippage(DEFAULT_SLIPPAGE)}>
+                    <Button
+                      size="xs"
+                      onClick={(): void => {
+                        setSlippage(DEFAULT_SLIPPAGE)
+                      }}
+                    >
                       Reset
                     </Button>
                   )}
@@ -100,7 +110,7 @@ export default function Settings({ isOpen, onClose }) {
             color="blue.500"
             fontFamily={fonts.mono}
           >
-            {process.env.COMMIT_SHA}
+            {process.env.COMMIT_SHA.slice(0, 7)}
           </Link>
         </ModalFooter>
       </ModalContent>

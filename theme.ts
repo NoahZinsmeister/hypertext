@@ -5,6 +5,6 @@ export default {
   fonts: {
     heading: `'B612', sans-serif`,
     body: `'B612', sans-serif`,
-    mono: `'B612 Mono', monospace`
-  }
+    mono: `'B612 Mono', monospace`,
+  },
 }

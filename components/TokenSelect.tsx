@@ -1,4 +1,4 @@
-import { useRef, useState, forwardRef, useLayoutEffect, ChangeEvent, useEffect } from 'react'
+import { useRef, useState, useLayoutEffect, ChangeEvent, useEffect } from 'react'
 import { Token, WETH } from '@uniswap/sdk'
 import { Input, Stack, Text, useColorMode, useTheme, List, ListItem } from '@chakra-ui/core'
 import {
@@ -25,32 +25,34 @@ export default function TokenSelect({
   isDisabled: boolean
   selectedToken?: Token
   onAddressSelect: (address: string) => void
-}) {
+}): JSX.Element {
   const { fonts, colors } = useTheme()
   const { colorMode } = useColorMode()
 
-  const [tokens, addToken] = useAllTokens()
+  const [tokens, { addTokenByAddress }] = useAllTokens()
 
   const [value, setValue] = useState('')
 
   useEffect(() => {
     try {
       const address = getAddress(value)
-      addToken(address)
+      addTokenByAddress(address)
         .then((token) => {
           if (token !== null) {
             setValue(getTokenDisplayValue(token))
           }
         })
-        .catch(() => {}) // todo handle failure grancefully
+        .catch(() => {
+          console.error('Invalid Token') // todo handle failure more gracefully
+        })
     } catch {}
-  }, [value])
+  }, [value, addTokenByAddress])
 
-  function onSelect(displayValue: string) {
+  function onSelect(displayValue: string): void {
     onAddressSelect(tokens.filter((token) => getTokenDisplayValue(token) === displayValue)[0].address)
   }
 
-  function onChange(event: ChangeEvent<HTMLInputElement>) {
+  function onChange(event: ChangeEvent<HTMLInputElement>): void {
     onAddressSelect(undefined)
     try {
       const address = getAddress(value)
@@ -91,6 +93,10 @@ export default function TokenSelect({
         return -1
       } else if (!aExact && bExact) {
         return 1
+      } else if (a.equals(WETH[a.chainId])) {
+        return -1
+      } else if (b.equals(WETH[b.chainId])) {
+        return 1
       } else {
         return getTokenDisplayValue(a).toLowerCase() > getTokenDisplayValue(b).toLowerCase() ? 1 : -1
       }
@@ -100,7 +106,7 @@ export default function TokenSelect({
     <>
       <Combobox openOnFocus onSelect={onSelect}>
         <TokenLogoColor token={selectedToken}>
-          {(swatch) => (
+          {(swatch): JSX.Element => (
             <ComboboxInput
               selectOnClick
               autocomplete={false}
@@ -115,7 +121,7 @@ export default function TokenSelect({
               textAlign="center"
               fontFamily={fonts.mono}
               fontSize="1.875rem"
-              {...(!!swatch && { color: swatch.hex })}
+              {...(!!swatch?.hex && { color: swatch.hex })}
               isInvalid={isInvalid}
               isDisabled={isDisabled}
               _disabled={{

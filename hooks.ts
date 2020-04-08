@@ -1,42 +1,40 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useWeb3React } from '@web3-react/core'
-import { Token, Pair, Route, JSBI, WETH } from '@uniswap/sdk'
+import { Token, Route, WETH } from '@uniswap/sdk'
 
 import { injected } from './connectors'
-import { useTokenBalance } from './data'
+import { useReserves } from './data'
 import { Contract } from '@ethersproject/contracts'
 
-// Hook
-export function useWindowSize() {
-  const isClient = typeof window === 'object'
-
-  function getSize() {
+export function useWindowSize(): { width: number | undefined; height: number | undefined } {
+  function getSize(): ReturnType<typeof useWindowSize> {
+    const isClient = typeof window === 'object'
     return {
       width: isClient ? window.innerWidth : undefined,
       height: isClient ? window.innerHeight : undefined,
     }
   }
 
-  const [windowSize, setWindowSize] = useState(getSize)
-
+  const [windowSize, setWindowSize] = useState(getSize())
   useEffect(() => {
-    if (isClient) {
-      const handleResize = () => {
-        setWindowSize(getSize())
-      }
-
-      window.addEventListener('resize', handleResize)
-      return () => window.removeEventListener('resize', handleResize)
+    const handleResize = (): void => {
+      setWindowSize(getSize())
     }
-  }, []) // Empty array ensures that effect is only run on mount and unmount
+    window.addEventListener('resize', handleResize)
+    return (): void => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   return windowSize
 }
 
-export function useBodyKeyDown(targetKey: string, onKeyDown: (event?: any) => any, suppress = false) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useBodyKeyDown(targetKey: string, onKeyDown: (event?: any) => void, suppress = false): void {
   const downHandler = useCallback(
     (event) => {
       if (
+        !suppress &&
         event.key === targetKey &&
         (event.target.tagName === 'BODY' || event.target.getAttribute('aria-modal') === 'true') &&
         !event.altKey &&
@@ -44,24 +42,20 @@ export function useBodyKeyDown(targetKey: string, onKeyDown: (event?: any) => an
         !event.metaKey &&
         !event.shiftKey
       ) {
-        event.preventDefault()
         onKeyDown(event)
       }
     },
-    [targetKey, onKeyDown]
+    [suppress, targetKey, onKeyDown]
   )
-
   useEffect(() => {
-    if (!suppress) {
-      window.addEventListener('keydown', downHandler)
-      return () => {
-        window.removeEventListener('keydown', downHandler)
-      }
+    window.addEventListener('keydown', downHandler)
+    return (): void => {
+      window.removeEventListener('keydown', downHandler)
     }
-  }, [suppress, downHandler])
+  }, [suppress, targetKey, downHandler])
 }
 
-export function useEagerConnect() {
+export function useEagerConnect(): boolean {
   const { activate, active } = useWeb3React()
 
   const [tried, setTried] = useState(false)
@@ -76,7 +70,7 @@ export function useEagerConnect() {
         setTried(true)
       }
     })
-  }, []) // intentionally only running on mount (make sure it's only mounted once :))
+  }, [activate])
 
   // if the connection worked, wait until we get confirmation of that to flip the flag
   useEffect(() => {
@@ -88,71 +82,51 @@ export function useEagerConnect() {
   return tried
 }
 
-export function useRoute(inputToken: Token, outputToken: Token) {
-  const pairAddress = !!inputToken && !!outputToken ? Pair.getAddress(inputToken, outputToken) : undefined
-  const { data: inputTokenBalance } = useTokenBalance(inputToken, pairAddress)
-  const { data: outputTokenBalance } = useTokenBalance(outputToken, pairAddress)
-
-  const directFetched = !!inputTokenBalance && !!outputTokenBalance
-  const noDirect = directFetched
-    ? JSBI.equal(inputTokenBalance.raw, JSBI.BigInt(0)) || JSBI.equal(outputTokenBalance.raw, JSBI.BigInt(0))
-    : undefined
-
-  const inputETHPairAddress =
-    noDirect === true && !inputToken?.equals(WETH[inputToken?.chainId])
-      ? Pair.getAddress(inputToken, WETH[inputToken.chainId])
-      : undefined
-  const outputETHPairAddress =
-    noDirect === true && !outputToken?.equals(WETH[outputToken?.chainId])
-      ? Pair.getAddress(outputToken, WETH[outputToken.chainId])
-      : undefined
-
-  const { data: inputETHPairTokenBalance } = useTokenBalance(inputToken, inputETHPairAddress)
-  const { data: inputETHPairETHBalance } = useTokenBalance(WETH[inputToken?.chainId], inputETHPairAddress)
-  const { data: outputETHPairTokenBalance } = useTokenBalance(outputToken, outputETHPairAddress)
-  const { data: outputETHPairETHBalance } = useTokenBalance(WETH[inputToken?.chainId], outputETHPairAddress)
-
-  const ETHFetched =
-    !!inputETHPairTokenBalance && !!inputETHPairETHBalance && !!outputETHPairTokenBalance && !!outputETHPairETHBalance
-  const noETH = ETHFetched
-    ? JSBI.equal(inputETHPairTokenBalance.raw, JSBI.BigInt(0)) ||
-      JSBI.equal(inputETHPairETHBalance.raw, JSBI.BigInt(0)) ||
-      JSBI.equal(outputETHPairTokenBalance.raw, JSBI.BigInt(0)) ||
-      JSBI.equal(outputETHPairETHBalance.raw, JSBI.BigInt(0))
-    : undefined
-
-  const pairs = useMemo(() => {
-    if (noDirect === false) {
-      return [new Pair(inputTokenBalance, outputTokenBalance)]
-    } else if (noETH === false) {
-      return [
-        new Pair(inputETHPairTokenBalance, inputETHPairETHBalance),
-        new Pair(outputETHPairTokenBalance, outputETHPairETHBalance),
-      ]
-    } else {
-      return !!inputTokenBalance && !!outputTokenBalance ? [new Pair(inputTokenBalance, outputTokenBalance)] : []
-    }
-  }, [
-    noDirect,
-    noETH,
-    inputTokenBalance,
-    outputTokenBalance,
-    inputETHPairTokenBalance,
-    inputETHPairETHBalance,
-    outputETHPairTokenBalance,
-    outputETHPairETHBalance,
-  ])
-
-  return useMemo(() => (pairs.length >= 1 ? new Route(pairs, inputToken) : undefined), [pairs])
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function useDirectPair(inputToken: Token, outputToken: Token) {
+  const { data: pair } = useReserves(inputToken, outputToken)
+  return pair
 }
 
-export function useContract(address?: string, ABI?: any, withSigner = false) {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function useETHPairs(inputToken: Token, outputToken: Token) {
+  const { data: inputPair } = useReserves(
+    inputToken,
+    inputToken?.equals(WETH[inputToken?.chainId]) ? undefined : WETH[inputToken?.chainId]
+  )
+  const { data: outputPair } = useReserves(
+    outputToken,
+    outputToken?.equals(WETH[outputToken?.chainId]) ? undefined : WETH[outputToken?.chainId]
+  )
+  return [inputPair, outputPair]
+}
+
+export function useRoute(inputToken: Token, outputToken: Token): undefined | Route | null {
+  const directPair = useDirectPair(inputToken, outputToken)
+  const [inputPair, outputPair] = useETHPairs(
+    directPair === null ? inputToken : undefined,
+    directPair === null ? outputToken : undefined
+  )
+
+  return useMemo(() => {
+    if (directPair) {
+      return new Route([directPair], inputToken)
+    } else if (inputPair && outputPair) {
+      return new Route([inputPair, outputPair], inputToken)
+    } else {
+      return directPair === null && (inputPair === null || outputPair === null) ? null : undefined
+    }
+  }, [directPair, inputPair, outputPair, inputToken])
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useContract(address?: string, ABI?: any, withSigner = false): Contract | undefined {
   const { library, account } = useWeb3React()
   return useMemo(
     () =>
       !!address && !!ABI && !!library
         ? new Contract(address, ABI, withSigner ? library.getSigner(account).connectUnchecked() : library)
         : undefined,
-    [address, library, ABI]
+    [address, ABI, withSigner, library, account]
   )
 }

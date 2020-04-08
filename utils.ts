@@ -5,6 +5,10 @@ export function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // $& means the whole matched string
 }
 
+export function shortenHex(hex: string, length = 4): string {
+  return `${hex.substring(0, length + 2)}…${hex.substring(hex.length - length)}`
+}
+
 export const CHAIN_ID_NAMES = {
   1: 'Mainnet',
   3: 'Ropsten',
@@ -33,7 +37,7 @@ interface EtherscanTypeData {
   [EtherscanType.Transaction]: [number, string]
 }
 
-export function formatEtherscanLink(type: EtherscanType, data: EtherscanTypeData[EtherscanType]) {
+export function formatEtherscanLink(type: EtherscanType, data: EtherscanTypeData[EtherscanType]): string {
   switch (type) {
     case EtherscanType.Account: {
       const [chainId, address] = data as EtherscanTypeData[EtherscanType.Account]
@@ -50,12 +54,12 @@ export function formatEtherscanLink(type: EtherscanType, data: EtherscanTypeData
   }
 }
 
-export function shortenAddress(address: string, length: number = 4) {
-  return `${address.substring(0, length + 2)}…${address.substring(address.length - length)}`
+export function getTokenDisplayValue(token: Token): string {
+  return token.equals(WETH[token.chainId]) ? 'ETH' : token.symbol
 }
 
 export function getPercentChange(referenceRate: Price, newRate: Price, flipOrder = false): Percent {
-  // calculate (referenceRate - newRate) / referenceRate
+  // calculate (referenceRate - newRate) / referenceRate or (newRate - referenceRate) / referenceRate
   const difference = new Fraction(
     flipOrder
       ? JSBI.subtract(
@@ -70,8 +74,4 @@ export function getPercentChange(referenceRate: Price, newRate: Price, flipOrder
   )
   const percentChange = difference.multiply(referenceRate.adjusted.invert())
   return new Percent(percentChange.numerator, percentChange.denominator)
-}
-
-export function getTokenDisplayValue(token: Token): string {
-  return WETH[token.chainId].equals(token) ? 'ETH' : token.symbol ?? shortenAddress(token.address)
 }

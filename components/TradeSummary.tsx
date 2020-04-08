@@ -25,7 +25,7 @@ export default function TradeSummary({
   trade?: Trade
   warning: boolean
   danger: boolean
-}) {
+}): JSX.Element {
   const { colorMode } = useColorMode()
 
   const size = useWindowSize()
@@ -36,13 +36,19 @@ export default function TradeSummary({
   const path = !!!route ? [] : (invert ? route.path : route.path.slice().reverse()).map(getTokenDisplayValue)
 
   return (
-    <Stack direction={isVertical ? 'column' : 'row'} align="center" spacing="1rem">
+    <Stack
+      direction={isVertical ? 'column' : 'row'}
+      align="center"
+      spacing="1rem"
+      {...{ visibility: !!route ? 'visible' : 'hidden' }}
+    >
       <Stat
         p="1rem"
         backgroundColor={colorMode === 'light' ? 'gray.100' : 'rgba(255,255,255,0.04)'}
         borderRadius="0.25rem"
       >
         <IconButton
+          transition="none"
           position="absolute"
           top={0}
           right={0}
@@ -50,7 +56,9 @@ export default function TradeSummary({
           variant="ghost"
           size="sm"
           aria-label="Invert"
-          onClick={() => setInvert((invert) => !invert)}
+          onClick={(): void => {
+            setInvert((invert) => !invert)
+          }}
         />
 
         <StatLabel w="max-content" pr="2rem">

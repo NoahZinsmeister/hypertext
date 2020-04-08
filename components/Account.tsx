@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
-import { Button, ButtonGroup, Stack, Text, Box } from '@chakra-ui/core'
+import { Button, Stack, Text, Box } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { useWeb3React } from '@web3-react/core'
 
-import { formatEtherscanLink, EtherscanType, shortenAddress } from '../utils'
+import { formatEtherscanLink, EtherscanType, shortenHex } from '../utils'
 import { injected } from '../connectors'
 import { useETHBalance, useTokenBalance } from '../data'
-import TokenLogo, { TokenLogoColor } from './TokenLogo'
+import TokenLogo from './TokenLogo'
 import { WETH } from '@uniswap/sdk'
+import { useFirstToken, useSecondToken } from '../context'
 
-export default function Account({ firstToken, secondToken }) {
+export default function Account(): JSX.Element {
   const { active, error, activate, library, chainId, account } = useWeb3React<Web3Provider>()
 
   const [connecting, setConnecting] = useState(false)
@@ -29,14 +30,16 @@ export default function Account({ firstToken, secondToken }) {
             setENSName(name)
           }
         })
-        .catch(() => {})
-      return () => {
+        .catch(() => {}) // eslint-disable-line @typescript-eslint/no-empty-function
+      return (): void => {
         setENSName('')
       }
     }
   }, [library, account, chainId])
 
   const { data: ETHBalance } = useETHBalance(account)
+  const [firstToken] = useFirstToken()
+  const [secondToken] = useSecondToken()
   const { data: firstTokenBalance } = useTokenBalance(firstToken, account)
   const { data: secondTokenBalance } = useTokenBalance(secondToken, account)
 
@@ -45,7 +48,7 @@ export default function Account({ firstToken, secondToken }) {
       <Box>
         <Button
           isLoading={connecting}
-          onClick={() => {
+          onClick={(): void => {
             setConnecting(true)
             activate(injected)
           }}
@@ -83,7 +86,7 @@ export default function Account({ firstToken, secondToken }) {
             rel: 'noopener noreferrer',
           }}
         >
-          {ENSName || `${shortenAddress(account, 4)}`}
+          {ENSName || `${shortenHex(account, 4)}`}
         </Button>
       </Stack>
 

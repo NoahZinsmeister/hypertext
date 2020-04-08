@@ -27,7 +27,7 @@ export default memo(function AmountInput({
     <Input
       ref={ref}
       value={value}
-      onChange={(event: ChangeEvent<HTMLInputElement>) => {
+      onChange={(event: ChangeEvent<HTMLInputElement>): void => {
         const value = event.target.value.replace(/,/g, '')
         if (value === '' || REGEX.test(escapeRegExp(value))) {
           onChange(value)

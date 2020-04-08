@@ -13,12 +13,14 @@ enum LocalStorageKeys {
   Tokens = 'tokens',
 }
 
-function useLocalStorage<T>(
+function useLocalStorage<T, S = T>(
   key: LocalStorageKeys,
   defaultValue: T,
-  { serialize, deserialize }: { serialize: (toSerialize: T) => any; deserialize: (toDeserialize: any) => T } = {
-    serialize: (toSerialize) => toSerialize,
-    deserialize: (toDeserialize) => toDeserialize,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  { serialize, deserialize }: { serialize: (toSerialize: T) => S; deserialize: (toDeserialize: S) => T } = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    serialize: (toSerialize): S => (toSerialize as unknown) as S,
+    deserialize: (toDeserialize): T => (toDeserialize as unknown) as T,
   }
 ): [T, (value: T) => void] {
   const [value, setValue] = useState(() => {
@@ -33,35 +35,15 @@ function useLocalStorage<T>(
     try {
       window.localStorage.setItem(key, JSON.stringify(serialize(value)))
     } catch {}
-  }, [key, value])
+  }, [key, serialize, value])
 
   return [value, setValue]
 }
 
-const LocalStorageContext = createContext<
-  [
-    {
-      approveMax: boolean
-      deadline: number
-      slippage: number
-      transactions: string[]
-      tokens: any[]
-    },
-    {
-      setApproveMax: (approveMax: boolean) => void
-      setDeadline: (deadline: number) => void
-      setSlippage: (slippage: number) => void
-      setTransactions: (transactions: string[]) => void
-      setTokens: (tokens: Token[]) => void
-    }
-  ]
->([] as any)
-
-function useLocalStorageContext() {
-  return useContext(LocalStorageContext)
-}
-
-function serializeTokens(tokens: Token[]): any[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeTokens(
+  tokens: Token[]
+): { chainId: number; address: string; decimals: number; symbol: string; name: string }[] {
   return tokens.map((token) => ({
     chainId: token.chainId,
     address: token.address,
@@ -71,7 +53,8 @@ function serializeTokens(tokens: Token[]): any[] {
   }))
 }
 
-function deserializeTokens(serializedTokens: any[]): Token[] {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deserializeTokens(serializedTokens: ReturnType<typeof serializeTokens>): Token[] {
   return serializedTokens.map(
     (serializedToken) =>
       new Token(
@@ -84,46 +67,108 @@ function deserializeTokens(serializedTokens: any[]): Token[] {
   )
 }
 
-export default function Provider({ children }) {
+const HypertextContext = createContext<
+  [
+    {
+      firstToken: Token
+      secondToken: Token
+      approveMax: boolean
+      deadline: number
+      slippage: number
+      transactions: string[]
+      tokens: Token[]
+    },
+    {
+      setFirstToken: (token: Token) => void
+      setSecondToken: (token: Token) => void
+      setApproveMax: (approveMax: boolean) => void
+      setDeadline: (deadline: number) => void
+      setSlippage: (slippage: number) => void
+      setTransactions: (transactions: string[]) => void
+      setTokens: (tokens: Token[]) => void
+    }
+  ]
+>([] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function useHypertextContext() {
+  return useContext(HypertextContext)
+}
+
+export default function Provider({ children }: { children: JSX.Element }): JSX.Element {
+  // global state
+  const [firstToken, setFirstToken] = useState<Token>()
+  const [secondToken, setSecondToken] = useState<Token>()
+
+  // global localstorage state
   const [approveMax, setApproveMax] = useLocalStorage<boolean>(LocalStorageKeys.ApproveMax, DEFAULT_APPROVE_MAX)
   const [deadline, setDeadline] = useLocalStorage<number>(LocalStorageKeys.Deadline, DEFAULT_DEADLINE)
   const [slippage, setSlippage] = useLocalStorage<number>(LocalStorageKeys.Slippage, DEFAULT_SLIPPAGE)
   const [transactions, setTransactions] = useLocalStorage<string[]>(LocalStorageKeys.Transactions, [])
-  const [tokens, setTokens] = useLocalStorage<any[]>(LocalStorageKeys.Tokens, [], {
-    serialize: serializeTokens,
-    deserialize: deserializeTokens,
-  })
+  const [tokens, setTokens] = useLocalStorage<Token[], ReturnType<typeof serializeTokens>>(
+    LocalStorageKeys.Tokens,
+    [],
+    {
+      serialize: serializeTokens,
+      deserialize: deserializeTokens,
+    }
+  )
 
   return (
-    <LocalStorageContext.Provider
+    <HypertextContext.Provider
       value={useMemo(
         () => [
-          { approveMax, deadline, slippage, transactions, tokens },
-          { setApproveMax, setDeadline, setSlippage, setTransactions, setTokens },
+          { firstToken, secondToken, approveMax, deadline, slippage, transactions, tokens },
+          { setFirstToken, setSecondToken, setApproveMax, setDeadline, setSlippage, setTransactions, setTokens },
         ],
-        [approveMax, deadline, slippage, transactions, tokens]
+        [
+          firstToken,
+          secondToken,
+          approveMax,
+          deadline,
+          slippage,
+          transactions,
+          tokens,
+          setFirstToken,
+          setSecondToken,
+          setApproveMax,
+          setDeadline,
+          setSlippage,
+          setTransactions,
+          setTokens,
+        ]
       )}
     >
       {children}
-    </LocalStorageContext.Provider>
+    </HypertextContext.Provider>
   )
 }
 
+export function useFirstToken(): [Token, ReturnType<typeof useHypertextContext>[1]['setFirstToken']] {
+  const [{ firstToken }, { setFirstToken }] = useHypertextContext()
+  return [firstToken, setFirstToken]
+}
+
+export function useSecondToken(): [Token, ReturnType<typeof useHypertextContext>[1]['setSecondToken']] {
+  const [{ secondToken }, { setSecondToken }] = useHypertextContext()
+  return [secondToken, setSecondToken]
+}
+
 export function useApproveMax(): [boolean, () => void] {
-  const [{ approveMax }, { setApproveMax }] = useLocalStorageContext()
+  const [{ approveMax }, { setApproveMax }] = useHypertextContext()
   const toggleApproveMax = useCallback(() => {
     setApproveMax(!approveMax)
-  }, [approveMax])
+  }, [approveMax, setApproveMax])
   return [approveMax, toggleApproveMax]
 }
 
-export function useDeadline(): [number, (deadline: number) => void] {
-  const [{ deadline }, { setDeadline }] = useLocalStorageContext()
+export function useDeadline(): [number, ReturnType<typeof useHypertextContext>[1]['setDeadline']] {
+  const [{ deadline }, { setDeadline }] = useHypertextContext()
   return [deadline, setDeadline]
 }
 
-export function useSlippage(): [number, (slippage: number) => void] {
-  const [{ slippage }, { setSlippage }] = useLocalStorageContext()
+export function useSlippage(): [number, ReturnType<typeof useHypertextContext>[1]['setSlippage']] {
+  const [{ slippage }, { setSlippage }] = useHypertextContext()
   return [slippage, setSlippage]
 }
 
@@ -131,51 +176,59 @@ export function useTransactions(): [
   string[],
   { addTransaction: (hash: string) => void; removeTransaction: (hash: string) => void }
 ] {
-  const [{ transactions }, { setTransactions }] = useLocalStorageContext()
+  const [{ transactions }, { setTransactions }] = useHypertextContext()
+
   const addTransaction = useCallback(
     (hash: string) => {
       if (!transactions.some((transaction) => transaction === hash)) {
         setTransactions(transactions.concat([hash]))
       }
     },
-    [transactions]
+    [transactions, setTransactions]
   )
   const removeTransaction = useCallback(
     (hash: string) => {
       setTransactions(transactions.filter((transaction) => transaction !== hash))
     },
-    [transactions]
+    [transactions, setTransactions]
   )
 
   return [transactions, { addTransaction, removeTransaction }]
 }
 
-export function useTokens(): [Token[], { addToken: (address: string) => Promise<Token | null> }] {
-  const [{ tokens }, { setTokens }] = useLocalStorageContext()
+export function useTokens(): [
+  Token[],
+  { addTokenByAddress: (address: string) => Promise<Token | null>; removeToken: (token: Token) => void }
+] {
   const { library, chainId } = useWeb3React()
-  const addToken = useCallback(
-    async (address: string) => {
-      if (tokens.some((token) => token.chainId === chainId && token.address === address)) {
-        return tokens.filter((token) => token.chainId === chainId && token.address === address)[0]
-      } else {
-        const contract = new Contract(address, ERC20, library)
-        const [decimals, symbol, name] = await Promise.all([
-          contract.decimals().catch(() => null),
-          contract.symbol().catch(() => new Contract(address, ERC20_BYTES32, library).catch(() => 'UNKNOWN')),
-          contract.name().catch(() => new Contract(address, ERC20_BYTES32, library).catch(() => 'Unknown')),
-        ])
+  const [{ tokens }, { setTokens }] = useHypertextContext()
 
-        if (decimals === null) {
-          return null
-        } else {
-          const token = new Token(chainId, address, decimals, symbol, name)
-          setTokens(tokens.concat([token]))
-          return token
-        }
+  const addTokenByAddress = useCallback(
+    async (address: string) => {
+      const contract = new Contract(address, ERC20, library)
+      const [decimals, symbol, name] = await Promise.all([
+        contract.decimals().catch(() => null),
+        contract.symbol().catch(() => new Contract(address, ERC20_BYTES32, library).catch(() => 'UNKNOWN')),
+        contract.name().catch(() => new Contract(address, ERC20_BYTES32, library).catch(() => 'Unknown')),
+      ])
+
+      if (decimals !== null) {
+        const token = new Token(chainId, address, decimals, symbol, name)
+        setTokens(tokens.concat([token]))
+        return token
+      } else {
+        return null
       }
     },
-    [library, chainId]
+    [library, chainId, tokens, setTokens]
   )
 
-  return [tokens, { addToken }]
+  const removeToken = useCallback(
+    (token: Token) => {
+      setTokens(tokens.filter((currentToken) => !currentToken.equals(token)))
+    },
+    [tokens, setTokens]
+  )
+
+  return [tokens, { addTokenByAddress, removeToken }]
 }

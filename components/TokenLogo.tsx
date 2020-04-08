@@ -5,18 +5,13 @@ import Vibrant from 'node-vibrant'
 
 let BROKEN: { [chainId: number]: { [address: string]: boolean } } = {}
 
-export default function TokenLogo({ token, size }: { token: Token; size: string }) {
+export default function TokenLogo({ token, size }: { token: Token; size: string }): JSX.Element {
   let src: string
   if (token.equals(WETH[token.chainId])) {
     src =
       'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png'
   } else {
-    src =
-      token.symbol === 'DAI'
-        ? `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png`
-        : token.symbol === 'MKR'
-        ? `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2/logo.png`
-        : `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
+    src = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
   }
 
   const [, setDummy] = useState(0)
@@ -30,7 +25,7 @@ export default function TokenLogo({ token, size }: { token: Token; size: string 
         maxWidth={size}
         minWidth={size}
         objectFit="contain"
-        onError={() => {
+        onError={(): void => {
           BROKEN = {
             ...BROKEN,
             [token.chainId]: {
@@ -48,15 +43,16 @@ export default function TokenLogo({ token, size }: { token: Token; size: string 
   }
 }
 
-let SWATCHES: { [chainId: number]: { [address: string]: any } } = {}
+type Swatch = { hex: string } | null
+let SWATCHES: { [chainId: number]: { [address: string]: Swatch } } = {}
 
 export function TokenLogoColor({
   token,
   children,
 }: {
   token?: Token
-  children: (swatch: undefined | any | null) => any
-}) {
+  children: (swatch: undefined | Swatch) => JSX.Element
+}): JSX.Element {
   const [, setDummy] = useState(0)
 
   useEffect(() => {
@@ -67,11 +63,7 @@ export function TokenLogoColor({
       !SWATCHES[token.chainId]?.[token.address]
     ) {
       Vibrant.from(
-        token.symbol === 'DAI'
-          ? `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x6B175474E89094C44Da98b954EedeAC495271d0F/logo.png`
-          : token.symbol === 'MKR'
-          ? `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2/logo.png`
-          : `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
+        `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
       )
         .getPalette()
         .then((palette) => {

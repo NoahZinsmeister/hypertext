@@ -7,12 +7,12 @@ import { getAddress } from '@ethersproject/address'
 
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
-import { useToken } from '../tokens'
+import { useTokenbyAddress } from '../tokens'
 import { useRoute, useContract } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
 import { useWeb3React } from '@web3-react/core'
 import { ROUTER_ADDRESS, ROUTER, ZERO, MAX_UINT256, ERC20 } from '../constants'
-import { useSlippage, useDeadline, useApproveMax, useTransactions } from '../context'
+import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
 import { useRouter } from 'next/router'
 import TradeSummary from '../components/TradeSummary'
 
@@ -50,6 +50,7 @@ function initializeSentenceState(
 enum ActionType {
   SELECT_TOKEN,
   TYPE,
+  RESET,
 }
 
 interface ActionPayload {
@@ -61,6 +62,7 @@ interface ActionPayload {
     field: Field
     value: string
   }
+  [ActionType.RESET]: undefined
 }
 
 function reducer(
@@ -95,6 +97,9 @@ function reducer(
         value,
       }
     }
+    case ActionType.RESET: {
+      return initializeSentenceState()
+    }
   }
 }
 
@@ -103,7 +108,7 @@ enum QueryParameters {
   OUTPUT = 'output',
 }
 
-export default function Buy({ setFirstToken, setSecondToken }) {
+export default function Buy(): JSX.Element {
   const { pathname, query, push } = useRouter()
   const queryParameters: { [parameter: string]: string | undefined } = {}
   try {
@@ -115,7 +120,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
         : undefined
   } catch {}
 
-  const { account } = useWeb3React()
+  const { account, chainId } = useWeb3React()
 
   const [approveMax] = useApproveMax()
   const [deadlineDelta] = useDeadline()
@@ -164,19 +169,33 @@ export default function Buy({ setFirstToken, setSecondToken }) {
   const dependentField = independentField === Field.INPUT ? Field.OUTPUT : Field.INPUT
   const tradeType = independentField === Field.INPUT ? TradeType.EXACT_INPUT : TradeType.EXACT_OUTPUT
 
+  // reset tokens and typed state when network changes
+  useEffect(() => {
+    if (typeof chainId === 'number') {
+      return (): void => {
+        dispatch({
+          type: ActionType.RESET,
+          payload: undefined,
+        })
+      }
+    }
+  }, [chainId])
+
   // sdk state
   const tokens = {
-    [Field.INPUT]: useToken(tokenAddresses[Field.INPUT].address),
-    [Field.OUTPUT]: useToken(tokenAddresses[Field.OUTPUT].address),
+    [Field.INPUT]: useTokenbyAddress(tokenAddresses[Field.INPUT].address),
+    [Field.OUTPUT]: useTokenbyAddress(tokenAddresses[Field.OUTPUT].address),
   }
   const firstToken = tokens[Field.OUTPUT]
   const secondToken = tokens[Field.INPUT]
+  const [, setFirstToken] = useFirstToken()
+  const [, setSecondToken] = useSecondToken()
   useEffect(() => {
     setFirstToken(firstToken)
-  }, [firstToken])
+  }, [firstToken, setFirstToken])
   useEffect(() => {
     setSecondToken(secondToken)
-  }, [secondToken])
+  }, [secondToken, setSecondToken])
   const route = useRoute(tokens[Field.INPUT], tokens[Field.OUTPUT])
 
   // parse input
@@ -228,7 +247,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
 
   // get allowance and balance for validation prurposes
   const router = useContract(ROUTER_ADDRESS, ROUTER, true)
-  const inputAllowance = useTokenAllowance(tokens[Field.INPUT], account, router.address)
+  const inputAllowance = useTokenAllowance(tokens[Field.INPUT], account, router?.address)
   const allowance = tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId])
     ? new TokenAmount(WETH[tokens[Field.INPUT].chainId], MAX_UINT256)
     : inputAllowance.data
@@ -242,16 +261,16 @@ export default function Buy({ setFirstToken, setSecondToken }) {
   const isInvalidBalance =
     !!parsed[Field.INPUT] && !!balance ? JSBI.greaterThan(parsed[Field.INPUT].raw, balance.raw) : false
   const isInvalidTrade = !!route && !!parsed[independentField] ? !!!trade : false
-  const isInvalidRoute = route ? JSBI.equal(route.midPrice.numerator, JSBI.BigInt(0)) : false
+  const isInvalidRoute = route === null
 
   const [buying, setBuying] = useState(false)
   const inputToken = useContract(tokens[Field.INPUT]?.address, ERC20, true)
-  async function buy() {
+  async function buy(): Promise<void> {
     setBuying(true)
 
-    async function swap(mockGas: boolean = false) {
-      let routerFunction: any
-      let routerArguments: any[]
+    async function swap(mockGas = false): Promise<{ hash: string }> {
+      let routerFunction: any // eslint-disable-line @typescript-eslint/no-explicit-any
+      let routerArguments: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
       let routerOptions: object = mockGas ? { gasLimit: 500000 } : {}
       const deadline = Math.floor(Date.now() / 1000) + deadlineDelta
 
@@ -387,7 +406,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
             isDisabled={buying}
             isInvalid={isInvalidTrade}
             value={formatted[Field.OUTPUT]}
-            onChange={(value) => {
+            onChange={(value): void => {
               dispatch({
                 type: ActionType.TYPE,
                 payload: { field: Field.OUTPUT, value },
@@ -401,7 +420,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
             isInvalid={isInvalidRoute}
             isDisabled={buying}
             selectedToken={tokens[Field.OUTPUT]}
-            onAddressSelect={(address) => {
+            onAddressSelect={(address): void => {
               dispatch({
                 type: ActionType.SELECT_TOKEN,
                 payload: { field: Field.OUTPUT, address },
@@ -432,7 +451,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
                 isDisabled={buying}
                 isInvalid={isInvalidBalance}
                 value={formatted[Field.INPUT]}
-                onChange={(value) => {
+                onChange={(value): void => {
                   dispatch({
                     type: ActionType.TYPE,
                     payload: { field: Field.INPUT, value },
@@ -445,7 +464,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
           <PopoverContent width="min-content" border="none" background="transparent" boxShadow="none">
             <Button
               size="sm"
-              onClick={() => {
+              onClick={(): void => {
                 dispatch({
                   type: ActionType.TYPE,
                   payload: { field: Field.INPUT, value: balance.toExact() },
@@ -462,7 +481,7 @@ export default function Buy({ setFirstToken, setSecondToken }) {
             isInvalid={isInvalidRoute}
             isDisabled={buying}
             selectedToken={tokens[Field.INPUT]}
-            onAddressSelect={(address) => {
+            onAddressSelect={(address): void => {
               dispatch({
                 type: ActionType.SELECT_TOKEN,
                 payload: { field: Field.INPUT, address },
