@@ -11,7 +11,7 @@ import { TransactionToast } from './TransactionToast'
 
 export default function Layout({ tried, children }: { tried: boolean; children: JSX.Element }): JSX.Element {
   const { chainId } = useWeb3React()
-  const isTestnet = chainId !== 1
+  const isTestnet = typeof chainId === 'number' && chainId !== 1
 
   const [transactions] = useTransactions()
 

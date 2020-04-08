@@ -4,17 +4,24 @@ import NextApp from 'next/app'
 import Head from 'next/head'
 import { ThemeProvider, CSSReset, ColorModeProvider } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
-import { Web3ReactProvider } from '@web3-react/core'
+import { Web3ReactProvider, useWeb3React } from '@web3-react/core'
+import { useRouter } from 'next/router'
 
 import theme from '../theme'
 import { useEagerConnect } from '../hooks'
+import { injected } from '../connectors'
 import Base from '../components/Base'
 import Favicon from '../components/Favicon'
 import Provider from '../context'
 import Layout from '../components/Layout'
+import SwitchToChain from '../components/SwitchToChain'
 
 import '../styles.css'
 import '@reach/combobox/styles.css'
+
+export enum QueryParameters {
+  CHAIN = 'chain',
+}
 
 function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Element {
   const [painted, setPainted] = useState(false)
@@ -24,13 +31,25 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
 
   const tried = useEagerConnect()
 
+  const { chainId } = useWeb3React()
+  const { query } = useRouter()
+  const requiredChainId = injected.supportedChainIds.includes(Number(query[QueryParameters.CHAIN]))
+    ? Number(query[QueryParameters.CHAIN])
+    : undefined
+
   return !painted ? null : (
     <>
       <Base />
       <ColorModeProvider>
         <Favicon />
         <Provider>
-          <Layout tried={tried}>{tried && <Component />}</Layout>
+          <Layout tried={tried}>
+            {!tried ? null : typeof requiredChainId === 'number' && requiredChainId !== chainId ? (
+              <SwitchToChain chainId={requiredChainId} />
+            ) : (
+              <Component />
+            )}
+          </Layout>
         </Provider>
       </ColorModeProvider>
     </>

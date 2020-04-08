@@ -231,6 +231,7 @@ export default function Buy(): JSX.Element {
         {
           pathname,
           query: {
+            ...query,
             ...(!!tokens[Field.INPUT]?.address && {
               [QueryParameters.INPUT]: tokens[Field.INPUT]?.address,
             }),
