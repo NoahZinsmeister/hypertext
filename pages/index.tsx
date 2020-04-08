@@ -2,9 +2,9 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 
 export default function Redirect(): null {
-  const { push } = useRouter()
+  const { replace } = useRouter()
   useEffect(() => {
-    push('/buy')
-  }, [push])
+    replace('/buy')
+  }, [replace])
   return null
 }
