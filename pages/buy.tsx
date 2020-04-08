@@ -1,5 +1,7 @@
 import { useReducer, useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import Link from 'next/link'
+import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { TradeType, TokenAmount, Trade, JSBI, WETH } from '@uniswap/sdk'
 import { Stack, Button, Box, Text, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/core'
@@ -10,10 +12,9 @@ import TokenSelect from '../components/TokenSelect'
 import { useTokenByAddress } from '../tokens'
 import { useRoute, useContract } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
-import { useWeb3React } from '@web3-react/core'
 import { ROUTER_ADDRESS, ROUTER, ZERO, MAX_UINT256, ERC20 } from '../constants'
 import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
-import { useRouter } from 'next/router'
+
 import TradeSummary from '../components/TradeSummary'
 
 enum Field {
