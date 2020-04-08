@@ -109,7 +109,7 @@ enum QueryParameters {
 }
 
 export default function Buy(): JSX.Element {
-  const { pathname, query, push } = useRouter()
+  const { pathname, query, replace } = useRouter()
   const queryParameters: { [parameter: string]: string | undefined } = {}
   try {
     queryParameters[QueryParameters.INPUT] =
@@ -147,7 +147,7 @@ export default function Buy(): JSX.Element {
       tokenAddresses[Field.INPUT].address !== queryParameters[QueryParameters.INPUT] ||
       tokenAddresses[Field.OUTPUT].address !== queryParameters[QueryParameters.OUTPUT]
     ) {
-      push(
+      replace(
         {
           pathname,
           query: {
