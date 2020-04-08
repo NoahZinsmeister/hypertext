@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect, useState } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import { ChainId, WETH, Token } from '@uniswap/sdk'
 
@@ -34,7 +34,32 @@ export function useAllTokens(): [Token[], ReturnType<typeof useTokens>[1]] {
   ]
 }
 
-export function useTokenbyAddress(tokenAddress?: string): Token | undefined {
-  const [allTokens] = useAllTokens()
-  return useMemo(() => allTokens.filter((token) => token.address === tokenAddress)[0], [allTokens, tokenAddress])
+let BROKEN: { [chainId: number]: { [address: string]: boolean } } = {}
+
+export function useTokenByAddress(tokenAddress?: string): Token | undefined {
+  const { chainId } = useWeb3React()
+  const [allTokens, { addTokenByAddress }] = useAllTokens()
+
+  const existingToken = useMemo(() => allTokens.filter((token) => token.address === tokenAddress)[0], [
+    allTokens,
+    tokenAddress,
+  ])
+
+  const [, setDummy] = useState(0)
+  useEffect(() => {
+    if (typeof chainId === 'number' && tokenAddress && !existingToken && !BROKEN[chainId]?.[tokenAddress]) {
+      addTokenByAddress(tokenAddress).catch(() => {
+        BROKEN = {
+          ...BROKEN,
+          [chainId]: {
+            ...BROKEN?.[chainId],
+            [tokenAddress]: true,
+          },
+        }
+        setDummy((dummy) => dummy + 1)
+      })
+    }
+  }, [chainId, tokenAddress, existingToken, addTokenByAddress])
+
+  return BROKEN[chainId]?.[tokenAddress] ? null : existingToken
 }

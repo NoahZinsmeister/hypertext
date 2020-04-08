@@ -24,15 +24,13 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
 
   const tried = useEagerConnect()
 
-  return !painted || !tried ? null : (
+  return !painted ? null : (
     <>
       <Base />
       <ColorModeProvider>
         <Favicon />
         <Provider>
-          <Layout>
-            <Component />
-          </Layout>
+          <Layout tried={tried}>{tried && <Component />}</Layout>
         </Provider>
       </ColorModeProvider>
     </>

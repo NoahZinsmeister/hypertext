@@ -9,11 +9,11 @@ import {
   ComboboxOption,
   ComboboxOptionText,
 } from '@reach/combobox'
+import { getAddress } from '@ethersproject/address'
 
-import { useAllTokens } from '../tokens'
+import { useAllTokens, useTokenByAddress } from '../tokens'
 import { getTokenDisplayValue } from '../utils'
 import TokenLogo, { TokenLogoColor } from './TokenLogo'
-import { getAddress } from '@ethersproject/address'
 
 export default function TokenSelect({
   isInvalid,
@@ -29,39 +29,44 @@ export default function TokenSelect({
   const { fonts, colors } = useTheme()
   const { colorMode } = useColorMode()
 
-  const [tokens, { addTokenByAddress }] = useAllTokens()
+  const [tokens] = useAllTokens()
 
   const [value, setValue] = useState('')
 
-  useEffect(() => {
-    try {
-      const address = getAddress(value)
-      addTokenByAddress(address)
-        .then((token) => {
-          if (token !== null) {
-            setValue(getTokenDisplayValue(token))
-          }
-        })
-        .catch(() => {
-          console.error('Invalid Token') // todo handle failure more gracefully
-        })
-    } catch {}
-  }, [value, addTokenByAddress])
+  // janky way to make sure that pasted token addresses get added
+  const [tokenAddress, setTokenAddress] = useState<string>()
+  const pastedToken = useTokenByAddress(tokenAddress)
 
   function onSelect(displayValue: string): void {
+    setValue('')
+    setTokenAddress(undefined)
     onAddressSelect(tokens.filter((token) => getTokenDisplayValue(token) === displayValue)[0].address)
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (pastedToken) {
+      setTokenAddress(undefined)
+      onSelect(getTokenDisplayValue(pastedToken))
+    }
+  })
+
   function onChange(event: ChangeEvent<HTMLInputElement>): void {
     onAddressSelect(undefined)
+    setTokenAddress(undefined)
+    let address: string
     try {
-      const address = getAddress(value)
+      address = getAddress(event.target.value)
+    } catch {}
+
+    if (address) {
       if (tokens.some((token) => token.address === address)) {
-        setValue(getTokenDisplayValue(tokens.filter((token) => token.address === address)[0]))
+        onSelect(getTokenDisplayValue(tokens.filter((token) => token.address === address)[0]))
       } else {
-        setValue(event.target.value)
+        setTokenAddress(address)
+        setValue(address)
       }
-    } catch {
+    } else {
       setValue(event.target.value)
     }
   }
@@ -112,7 +117,7 @@ export default function TokenSelect({
               autocomplete={false}
               as={Input}
               ref={ref}
-              value={!!selectedToken ? getTokenDisplayValue(selectedToken) : value}
+              value={selectedToken ? getTokenDisplayValue(selectedToken) : value}
               onChange={onChange}
               title="Token Select"
               // chakra props
@@ -123,7 +128,7 @@ export default function TokenSelect({
               fontFamily={fonts.mono}
               fontSize="1.875rem"
               {...(!!swatch?.hex && { color: swatch.hex })}
-              isInvalid={isInvalid}
+              isInvalid={isInvalid || pastedToken === null}
               isDisabled={isDisabled}
               _disabled={{
                 opacity: 0.4,
@@ -178,22 +183,27 @@ export default function TokenSelect({
           min-width: max-content !important;
           max-height: 20rem;
           overflow-y: auto;
-          background-color: ${colorMode === 'light' ? colors.gray[50] : colors.gray[900]};
+          background: ${colorMode === 'light' ? colors.gray[50] : colors.gray[900]};
           color: ${colorMode === 'light' ? 'black' : 'white'};
           border-radius: 0.5rem;
           border-top-left-radius: 0;
         }
 
         :global([data-reach-combobox-list] :hover) {
-          background-color: ${colorMode === 'light' ? colors.gray[100] : 'rgba(255,255,255,0.04)'};
-        }
-
-        :global([data-reach-combobox-option] :hover) {
-          background-color: unset;
+          background: ${colorMode === 'light' ? colors.gray[100] : 'rgba(255,255,255,0.04)'};
         }
 
         :global([data-reach-combobox-option]) {
           font-size: 1.25rem;
+          background: none;
+        }
+
+        :global([data-reach-combobox-option] :hover) {
+          background: none;
+        }
+
+        :global([data-reach-combobox-option][data-highlighted]) {
+          background: ${colorMode === 'light' ? colors.gray[100] : 'rgba(255,255,255,0.04)'} !important;
         }
 
         :global([data-user-value]) {

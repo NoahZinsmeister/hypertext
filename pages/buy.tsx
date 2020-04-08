@@ -7,7 +7,7 @@ import { getAddress } from '@ethersproject/address'
 
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
-import { useTokenbyAddress } from '../tokens'
+import { useTokenByAddress } from '../tokens'
 import { useRoute, useContract } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
 import { useWeb3React } from '@web3-react/core'
@@ -114,6 +114,8 @@ export default function Buy(): JSX.Element {
   try {
     queryParameters[QueryParameters.INPUT] =
       typeof query[QueryParameters.INPUT] === 'string' ? getAddress(query[QueryParameters.INPUT] as string) : undefined
+  } catch {}
+  try {
     queryParameters[QueryParameters.OUTPUT] =
       typeof query[QueryParameters.OUTPUT] === 'string'
         ? getAddress(query[QueryParameters.OUTPUT] as string)
@@ -132,7 +134,7 @@ export default function Buy(): JSX.Element {
     reducer,
     {
       [Field.INPUT]: {
-        address: queryParameters[QueryParameters.INPUT] ?? WETH[chainId]?.address,
+        address: queryParameters[QueryParameters.INPUT],
       },
       [Field.OUTPUT]: {
         address: queryParameters[QueryParameters.OUTPUT],
@@ -142,49 +144,14 @@ export default function Buy(): JSX.Element {
   )
   const { independentField, value, ...tokenAddresses } = state
 
-  useEffect(() => {
-    if (
-      tokenAddresses[Field.INPUT].address !== queryParameters[QueryParameters.INPUT] ||
-      tokenAddresses[Field.OUTPUT].address !== queryParameters[QueryParameters.OUTPUT]
-    ) {
-      replace(
-        {
-          pathname,
-          query: {
-            ...(!!tokenAddresses[Field.INPUT].address && {
-              [QueryParameters.INPUT]: tokenAddresses[Field.INPUT].address,
-            }),
-            ...(!!tokenAddresses[Field.OUTPUT].address && {
-              [QueryParameters.OUTPUT]: tokenAddresses[Field.OUTPUT].address,
-            }),
-          },
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-  })
-
   // derived state
   const dependentField = independentField === Field.INPUT ? Field.OUTPUT : Field.INPUT
   const tradeType = independentField === Field.INPUT ? TradeType.EXACT_INPUT : TradeType.EXACT_OUTPUT
 
-  // reset tokens and typed state when network changes
-  useEffect(() => {
-    if (typeof chainId === 'number') {
-      return (): void => {
-        dispatch({
-          type: ActionType.RESET,
-          payload: undefined,
-        })
-      }
-    }
-  }, [chainId])
-
   // sdk state
   const tokens = {
-    [Field.INPUT]: useTokenbyAddress(tokenAddresses[Field.INPUT].address),
-    [Field.OUTPUT]: useTokenbyAddress(tokenAddresses[Field.OUTPUT].address),
+    [Field.INPUT]: useTokenByAddress(tokenAddresses[Field.INPUT].address),
+    [Field.OUTPUT]: useTokenByAddress(tokenAddresses[Field.OUTPUT].address),
   }
   const firstToken = tokens[Field.OUTPUT]
   const secondToken = tokens[Field.INPUT]
@@ -241,6 +208,42 @@ export default function Buy(): JSX.Element {
         : value,
     [dependentField]: parsed[dependentField] ? parsed[dependentField].toSignificant(4, { groupSeparator: ',' }) : '',
   }
+
+  // reset tokens and value when network changes
+  useEffect(() => {
+    if (typeof chainId === 'number') {
+      return (): void => {
+        dispatch({
+          type: ActionType.RESET,
+          payload: undefined,
+        })
+      }
+    }
+  }, [chainId])
+
+  // keep url params in sync with tokens
+  useEffect(() => {
+    if (
+      queryParameters[QueryParameters.INPUT] !== tokens[Field.INPUT]?.address ||
+      queryParameters[QueryParameters.OUTPUT] !== tokens[Field.OUTPUT]?.address
+    ) {
+      replace(
+        {
+          pathname,
+          query: {
+            ...(!!tokens[Field.INPUT]?.address && {
+              [QueryParameters.INPUT]: tokens[Field.INPUT]?.address,
+            }),
+            ...(!!tokens[Field.OUTPUT]?.address && {
+              [QueryParameters.OUTPUT]: tokens[Field.OUTPUT]?.address,
+            }),
+          },
+        },
+        undefined,
+        { shallow: true }
+      )
+    }
+  })
 
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
   const danger = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 10

@@ -10,7 +10,7 @@ import TokenLogo from './TokenLogo'
 import { WETH } from '@uniswap/sdk'
 import { useFirstToken, useSecondToken } from '../context'
 
-export default function Account(): JSX.Element {
+export default function Account({ tried }: { tried: boolean }): JSX.Element {
   const { active, error, activate, library, chainId, account } = useWeb3React<Web3Provider>()
 
   const [connecting, setConnecting] = useState(false)
@@ -43,7 +43,9 @@ export default function Account(): JSX.Element {
   const { data: firstTokenBalance } = useTokenBalance(firstToken, account)
   const { data: secondTokenBalance } = useTokenBalance(secondToken, account)
 
-  if (typeof account !== 'string') {
+  if (!tried) {
+    return null
+  } else if (typeof account !== 'string') {
     return (
       <Box>
         <Button

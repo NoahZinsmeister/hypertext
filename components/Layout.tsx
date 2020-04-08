@@ -1,18 +1,15 @@
-import Head from 'next/head'
-import { useColorMode, Flex, IconButton, useDisclosure, Badge, LightMode } from '@chakra-ui/core'
+import { Flex, IconButton, useDisclosure, Badge, LightMode } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
 
 import { CHAIN_ID_NAMES } from '../utils'
 import { useBodyKeyDown } from '../hooks'
+import { useTransactions } from '../context'
 import ColorBox from './ColorBox'
 import Settings from './Settings'
 import Account from './Account'
-import { useTransactions } from '../context'
 import { TransactionToast } from './TransactionToast'
 
-export default function Layout({ children }: { children: JSX.Element }): JSX.Element {
-  const { colorMode } = useColorMode()
-
+export default function Layout({ tried, children }: { tried: boolean; children: JSX.Element }): JSX.Element {
   const { chainId } = useWeb3React()
   const isTestnet = chainId !== 1
 
@@ -39,24 +36,26 @@ export default function Layout({ children }: { children: JSX.Element }): JSX.Ele
       >
         <Flex justifyContent="space-between" overflowX="auto" minHeight="9.5rem" maxHeight="9.5rem" p="1rem" pb={0}>
           <IconButton icon="settings" variant="ghost" onClick={onOpenSettings} aria-label="Settings" />
-          <Account />
+          <Account tried={tried} />
         </Flex>
 
         <Flex flexGrow={1} direction="column" overflowY="auto">
           {children}
         </Flex>
 
-        <Flex>
-          <LightMode>
-            <Badge
-              variant="solid"
-              variantColor={isTestnet ? 'orange' : undefined}
-              fontSize="1rem"
-              style={{ borderTopLeftRadius: 0, borderBottomRightRadius: 0, borderBottomLeftRadius: 0 }}
-            >
-              {CHAIN_ID_NAMES[chainId]}
-            </Badge>
-          </LightMode>
+        <Flex minHeight="1.5rem">
+          {typeof chainId === 'number' && (
+            <LightMode>
+              <Badge
+                variant="solid"
+                variantColor={isTestnet ? 'orange' : undefined}
+                fontSize="1rem"
+                style={{ borderTopLeftRadius: 0, borderBottomRightRadius: 0, borderBottomLeftRadius: 0 }}
+              >
+                {CHAIN_ID_NAMES[chainId]}
+              </Badge>
+            </LightMode>
+          )}
         </Flex>
       </ColorBox>
     </>
