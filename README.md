@@ -1,3 +1,3 @@
 # `hypertext`
 
-A text-based interface for [Uniswap](https://uniswap.org).
+A text-forward [Uniswap](https://uniswap.org) interface.

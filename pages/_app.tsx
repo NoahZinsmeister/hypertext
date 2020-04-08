@@ -50,7 +50,8 @@ export default class App extends NextApp {
     return (
       <>
         <Head>
-          <title>Hypertext</title>
+          <title key="title">Hypertext</title>
+          <meta key="description" name="Description" content="A text-forward Uniswap interface." />
         </Head>
         <Web3ReactProvider getLibrary={getLibrary}>
           <ThemeProvider theme={theme}>

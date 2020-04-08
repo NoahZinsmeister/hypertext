@@ -114,6 +114,7 @@ export default function TokenSelect({
               ref={ref}
               value={!!selectedToken ? getTokenDisplayValue(selectedToken) : value}
               onChange={onChange}
+              title="Token Select"
               // chakra props
               variant="flushed"
               placeholder="Select…"

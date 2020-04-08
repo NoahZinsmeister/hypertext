@@ -23,10 +23,6 @@ export default function Layout({ children }: { children: JSX.Element }): JSX.Ele
 
   return (
     <>
-      <Head>
-        <link rel="shortcut icon" href={`favicon${colorMode === 'dark' && '-dark'}.ico`} />
-      </Head>
-
       <Settings isOpen={isOpenSettings} onClose={onCloseSettings} />
 
       {transactions.map((hash) => (

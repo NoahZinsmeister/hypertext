@@ -5,6 +5,7 @@ export default function Base(): JSX.Element {
   return (
     <Head>
       <base
+        key="base"
         href={
           process.env.IPFS === 'true'
             ? resolve(
