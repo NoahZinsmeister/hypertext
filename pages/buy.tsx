@@ -132,7 +132,7 @@ export default function Buy(): JSX.Element {
     reducer,
     {
       [Field.INPUT]: {
-        address: queryParameters[QueryParameters.INPUT] ?? '0xc778417E063141139Fce010982780140Aa0cD5Ab',
+        address: queryParameters[QueryParameters.INPUT] ?? WETH[chainId]?.address,
       },
       [Field.OUTPUT]: {
         address: queryParameters[QueryParameters.OUTPUT],
