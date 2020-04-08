@@ -376,7 +376,7 @@ export default function Buy(): JSX.Element {
         <Box ml="0.8rem">
           {!!!trade ? (
             <Link href={{ pathname: '/sell', query }} passHref>
-              <Button variant={'ghost'} variantColor={'green'}>
+              <Button as="a" variant="ghost" variantColor="green">
                 <Text fontSize="3xl">Buy</Text>
               </Button>
             </Link>
