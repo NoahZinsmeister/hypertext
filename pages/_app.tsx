@@ -44,7 +44,9 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
         <Favicon />
         <Provider>
           <Layout tried={tried}>
-            {!tried ? null : typeof requiredChainId === 'number' && requiredChainId !== chainId ? (
+            {!tried ? null : typeof requiredChainId === 'number' &&
+              typeof chainId === 'number' &&
+              requiredChainId !== chainId ? (
               <SwitchToChain chainId={requiredChainId} />
             ) : (
               <Component />
