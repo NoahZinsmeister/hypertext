@@ -4,7 +4,7 @@ import { ChainId, WETH, Token } from '@uniswap/sdk'
 
 import { useTokens } from './context'
 
-const DEFAULT_TOKENS = [
+export const DEFAULT_TOKENS = [
   ...Object.values(WETH),
 
   new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin'),

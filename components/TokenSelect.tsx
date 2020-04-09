@@ -1,6 +1,6 @@
 import { useRef, useState, useLayoutEffect, ChangeEvent, useEffect } from 'react'
 import { Token, WETH } from '@uniswap/sdk'
-import { Input, Stack, Text, useColorMode, useTheme, List, ListItem } from '@chakra-ui/core'
+import { Input, Stack, Text, useColorMode, useTheme, List, ListItem, IconButton } from '@chakra-ui/core'
 import {
   Combobox,
   ComboboxInput,
@@ -11,9 +11,10 @@ import {
 } from '@reach/combobox'
 import { getAddress } from '@ethersproject/address'
 
-import { useAllTokens, useTokenByAddress } from '../tokens'
+import { useAllTokens, useTokenByAddress, DEFAULT_TOKENS } from '../tokens'
 import { getTokenDisplayValue } from '../utils'
 import TokenLogo, { TokenLogoColor } from './TokenLogo'
+import { useFirstToken, useSecondToken } from '../context'
 
 export default function TokenSelect({
   isInvalid,
@@ -29,7 +30,10 @@ export default function TokenSelect({
   const { fonts, colors } = useTheme()
   const { colorMode } = useColorMode()
 
-  const [tokens] = useAllTokens()
+  const [tokens, { removeToken }] = useAllTokens()
+
+  const [firstToken] = useFirstToken()
+  const [secondToken] = useSecondToken()
 
   const [value, setValue] = useState('')
 
@@ -145,13 +149,33 @@ export default function TokenSelect({
           )}
           <ComboboxList as={List} persistSelection>
             {filteredTokens.map((token, i) => {
+              const userAdded = !DEFAULT_TOKENS.some((defaultToken) => defaultToken.equals(token))
               return (
                 <ComboboxOption
                   as={ListItem}
                   key={token.address}
                   value={getTokenDisplayValue(token)}
-                  _focus={{ zIndex: 1000 }}
+                  position="relative"
                 >
+                  {userAdded && (
+                    <IconButton
+                      position="absolute"
+                      isDisabled={
+                        (!!firstToken && firstToken.equals(token)) || (!!secondToken && secondToken.equals(token))
+                      }
+                      top={0}
+                      right={0}
+                      icon="close"
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Remove"
+                      onClick={(event): void => {
+                        event.preventDefault()
+                        removeToken(token)
+                      }}
+                    />
+                  )}
+
                   <Stack
                     direction="row"
                     align="center"
