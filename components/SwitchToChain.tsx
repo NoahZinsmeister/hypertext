@@ -12,21 +12,14 @@ export default function SwitchToChain({ chainId }: { chainId: number }): JSX.Ele
     <Flex flexGrow={1} alignItems="center" justifyContent="center">
       <Stack direction="column" alignItems="center">
         <Text fontSize="1.5rem">
-          Please switch to the {chainId === 1 ? 'Ethereum' : ''} {CHAIN_ID_NAMES[chainId]}
+          Please connect to the {chainId === 1 ? 'Ethereum' : ''} {CHAIN_ID_NAMES[chainId]}
           {chainId !== 1 ? ' testnet' : ''}.
         </Text>
 
         <Button
           width="min-content"
           onClick={(): void => {
-            replace(
-              {
-                pathname,
-                query: stripped,
-              },
-              undefined,
-              { shallow: true }
-            )
+            replace({ pathname }, undefined, { shallow: true })
           }}
         >
           Here by mistake?

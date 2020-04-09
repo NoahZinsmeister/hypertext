@@ -160,9 +160,15 @@ export default function Buy(): JSX.Element {
   const [, setSecondToken] = useSecondToken()
   useEffect(() => {
     setFirstToken(firstToken)
+    return (): void => {
+      setFirstToken(undefined)
+    }
   }, [firstToken, setFirstToken])
   useEffect(() => {
     setSecondToken(secondToken)
+    return (): void => {
+      setSecondToken(undefined)
+    }
   }, [secondToken, setSecondToken])
   const route = useRoute(tokens[Field.INPUT], tokens[Field.OUTPUT])
 
@@ -224,26 +230,23 @@ export default function Buy(): JSX.Element {
 
   // keep url params in sync with tokens
   useEffect(() => {
-    if (
-      queryParameters[QueryParameters.INPUT] !== tokens[Field.INPUT]?.address ||
-      queryParameters[QueryParameters.OUTPUT] !== tokens[Field.OUTPUT]?.address
-    ) {
-      replace(
-        {
-          pathname,
-          query: {
-            ...query,
-            ...(!!tokens[Field.INPUT]?.address && {
-              [QueryParameters.INPUT]: tokens[Field.INPUT]?.address,
-            }),
-            ...(!!tokens[Field.OUTPUT]?.address && {
-              [QueryParameters.OUTPUT]: tokens[Field.OUTPUT]?.address,
-            }),
+    if (typeof chainId === 'number') {
+      const { [QueryParameters.INPUT]: input, [QueryParameters.OUTPUT]: output, ...stripped } = query
+      const newQuery = {
+        ...stripped,
+        ...(!!tokens[Field.INPUT]?.address && { [QueryParameters.INPUT]: tokens[Field.INPUT].address }),
+        ...(!!tokens[Field.OUTPUT]?.address && { [QueryParameters.OUTPUT]: tokens[Field.OUTPUT].address }),
+      }
+      if (input !== newQuery[QueryParameters.INPUT] || output !== newQuery[QueryParameters.OUTPUT]) {
+        replace(
+          {
+            pathname,
+            query: newQuery,
           },
-        },
-        undefined,
-        { shallow: true }
-      )
+          undefined,
+          { shallow: true }
+        )
+      }
     }
   })
 
