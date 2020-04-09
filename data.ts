@@ -83,7 +83,11 @@ async function getReserves(_: DataType, token0: Token, token1: Token, contract: 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useReserves(tokenA?: Token, tokenB?: Token) {
   const [token0, token1] =
-    !!!tokenA || !!!tokenB ? [] : tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]
+    !!!tokenA || !!!tokenB || tokenA.equals(tokenB)
+      ? []
+      : tokenA.sortsBefore(tokenB)
+      ? [tokenA, tokenB]
+      : [tokenB, tokenA]
   const pairAddress = !!token0 && !!token1 ? Pair.getAddress(token0, token1) : undefined
   const contract = useContract(pairAddress, PAIR)
   const shouldFetch = !!contract
