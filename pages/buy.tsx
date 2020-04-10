@@ -228,27 +228,12 @@ export default function Buy(): JSX.Element {
     }
   }, [chainId])
 
-  // keep url params in sync with tokens
+  // clear url params
   useEffect(() => {
-    if (typeof chainId === 'number') {
-      const { [QueryParameters.INPUT]: input, [QueryParameters.OUTPUT]: output, ...stripped } = query
-      const newQuery = {
-        ...stripped,
-        ...(!!tokens[Field.INPUT]?.address && { [QueryParameters.INPUT]: tokens[Field.INPUT].address }),
-        ...(!!tokens[Field.OUTPUT]?.address && { [QueryParameters.OUTPUT]: tokens[Field.OUTPUT].address }),
-      }
-      if (input !== newQuery[QueryParameters.INPUT] || output !== newQuery[QueryParameters.OUTPUT]) {
-        replace(
-          {
-            pathname,
-            query: newQuery,
-          },
-          undefined,
-          { shallow: true }
-        )
-      }
+    if (Object.keys(query).length > 0) {
+      replace({ pathname, query: {} }, undefined, { shallow: true })
     }
-  })
+  }, [query, pathname, replace])
 
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
   const danger = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 10
