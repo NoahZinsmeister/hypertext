@@ -1,6 +1,18 @@
-import { useRef, useState, useLayoutEffect, ChangeEvent, useEffect } from 'react'
+import { useRef, useState, useLayoutEffect, ChangeEvent, useEffect, useMemo } from 'react'
 import { Token, WETH } from '@uniswap/sdk'
-import { Input, Stack, Text, useColorMode, useTheme, List, ListItem, IconButton } from '@chakra-ui/core'
+import {
+  Input,
+  Stack,
+  Text,
+  useColorMode,
+  useTheme,
+  List,
+  ListItem,
+  IconButton,
+  Divider,
+  Spinner,
+  Flex,
+} from '@chakra-ui/core'
 import {
   Combobox,
   ComboboxInput,
@@ -10,11 +22,14 @@ import {
   ComboboxOptionText,
 } from '@reach/combobox'
 import { getAddress } from '@ethersproject/address'
+import { useWeb3React } from '@web3-react/core'
 
 import { useAllTokens, useTokenByAddress, DEFAULT_TOKENS } from '../tokens'
 import { getTokenDisplayValue } from '../utils'
 import TokenLogo, { TokenLogoColor } from './TokenLogo'
 import { useFirstToken, useSecondToken } from '../context'
+import { useRemoteTokens } from '../data'
+import { useDefaultedDebounce } from '../hooks'
 
 export default function TokenSelect({
   isInvalid,
@@ -29,6 +44,7 @@ export default function TokenSelect({
 }): JSX.Element {
   const { fonts, colors } = useTheme()
   const { colorMode } = useColorMode()
+  const { chainId } = useWeb3React()
 
   const [tokens, { removeToken }] = useAllTokens()
 
@@ -42,9 +58,15 @@ export default function TokenSelect({
   const pastedToken = useTokenByAddress(tokenAddress)
 
   function onSelect(displayValue: string): void {
-    setValue('')
-    setTokenAddress(undefined)
-    onAddressSelect(tokens.filter((token) => getTokenDisplayValue(token) === displayValue)[0].address)
+    const isRemoteToken = tokens.filter((token) => getTokenDisplayValue(token) === displayValue).length === 0
+    if (isRemoteToken) {
+      setTokenAddress(displayValue)
+      setValue(displayValue)
+    } else {
+      setValue('')
+      setTokenAddress(undefined)
+      onAddressSelect(tokens.filter((token) => getTokenDisplayValue(token) === displayValue)[0].address)
+    }
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -54,6 +76,25 @@ export default function TokenSelect({
       onSelect(getTokenDisplayValue(pastedToken))
     }
   })
+
+  // get remote tokens
+  const debouncedValue = useDefaultedDebounce(value.length < 2 ? '' : value, '', 300)
+  const { data: remoteTokensCased } = useRemoteTokens(debouncedValue)
+  const { data: remoteTokensLower } = useRemoteTokens(debouncedValue.toLowerCase())
+  const { data: remoteTokensUpper } = useRemoteTokens(debouncedValue.toUpperCase())
+  const hasTyped = value.length > 1
+  const isLoading = hasTyped && (!remoteTokensCased || !remoteTokensLower || !remoteTokensUpper)
+  const remoteTokens = useMemo(
+    () => (!hasTyped || isLoading ? [] : remoteTokensCased.concat(remoteTokensLower).concat(remoteTokensUpper)),
+    [hasTyped, isLoading, remoteTokensCased, remoteTokensLower, remoteTokensUpper]
+  )
+  const remoteTokensFiltered = useMemo(
+    () =>
+      Array.from(new Set(remoteTokens.map((remoteToken) => remoteToken.address)))
+        .filter((address) => tokens.every((token) => token.address !== address)) // filter out tokens already in our list
+        .map((address) => remoteTokens.find((remoteToken) => remoteToken.address === address)),
+    [remoteTokens, tokens]
+  )
 
   function onChange(event: ChangeEvent<HTMLInputElement>): void {
     onAddressSelect(undefined)
@@ -144,38 +185,14 @@ export default function TokenSelect({
         <ComboboxPopover>
           {value === '' && (
             <Text mx="1rem" my="0.5rem" textAlign="center" color="gray.500">
-              Paste token address to add
+              Paste token address or search
             </Text>
           )}
           <ComboboxList as={List} persistSelection>
             {filteredTokens.map((token, i) => {
               const userAdded = !DEFAULT_TOKENS.some((defaultToken) => defaultToken.equals(token))
               return (
-                <ComboboxOption
-                  as={ListItem}
-                  key={token.address}
-                  value={getTokenDisplayValue(token)}
-                  position="relative"
-                >
-                  {userAdded && (
-                    <IconButton
-                      position="absolute"
-                      isDisabled={
-                        (!!firstToken && firstToken.equals(token)) || (!!secondToken && secondToken.equals(token))
-                      }
-                      top={0}
-                      right={0}
-                      icon="close"
-                      variant="ghost"
-                      size="sm"
-                      aria-label="Remove"
-                      onClick={(event): void => {
-                        event.preventDefault()
-                        removeToken(token)
-                      }}
-                    />
-                  )}
-
+                <ComboboxOption as={ListItem} key={token.address} value={getTokenDisplayValue(token)}>
                   <Stack
                     direction="row"
                     align="center"
@@ -194,11 +211,73 @@ export default function TokenSelect({
                         {WETH[token.chainId].equals(token) ? 'Ethereum' : token.name ? token.name : null}
                       </Text>
                     </Stack>
+
+                    {userAdded && (
+                      <Flex flexGrow={1} mb="auto" justifyContent="flex-end">
+                        <IconButton
+                          isDisabled={
+                            (!!firstToken && firstToken.equals(token)) || (!!secondToken && secondToken.equals(token))
+                          }
+                          icon="close"
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Remove"
+                          onClick={(event): void => {
+                            event.preventDefault()
+                            removeToken(token)
+                          }}
+                        />
+                      </Flex>
+                    )}
                   </Stack>
                 </ComboboxOption>
               )
             })}
           </ComboboxList>
+
+          {remoteTokensFiltered.length > 0 && (
+            <>
+              <Divider m={0} />
+              <Text mx="1rem" my="0.5rem" textAlign="center">
+                Unverified
+              </Text>
+            </>
+          )}
+
+          {isLoading && (
+            <Flex justifyContent="center" my="0.5rem">
+              <Spinner color="gray.500" size="sm" />
+            </Flex>
+          )}
+
+          {remoteTokensFiltered.length > 0 && (
+            <ComboboxList as={List} persistSelection>
+              {remoteTokensFiltered.map((token, i) => {
+                const DUMMY = new Token(chainId, token.address, 18) // we don't know if it actually has 18 decimals
+                return (
+                  <ComboboxOption as={ListItem} key={token.address} value={token.address}>
+                    <Stack
+                      direction="row"
+                      align="center"
+                      p="0.5rem"
+                      style={{
+                        borderTopRightRadius: i === 0 ? '0.5rem' : 0,
+                        borderBottomLeftRadius: i + 1 === tokens.length ? '0.5rem' : 0,
+                        borderBottomRightRadius: i + 1 === tokens.length ? '0.5rem' : 0,
+                      }}
+                    >
+                      <TokenLogo token={DUMMY} size="1.5rem" />
+
+                      <Stack direction="column" ml="1rem" spacing={0} display="block">
+                        <Text>{token.symbol ? token.symbol : null}</Text>
+                        <Text fontSize="1rem">{token.name ? token.name : null}</Text>
+                      </Stack>
+                    </Stack>
+                  </ComboboxOption>
+                )
+              })}
+            </ComboboxList>
+          )}
         </ComboboxPopover>
       </Combobox>
 

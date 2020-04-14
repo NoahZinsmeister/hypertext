@@ -5,6 +5,9 @@ import { Token, Route, WETH } from '@uniswap/sdk'
 import { injected } from './connectors'
 import { useReserves } from './data'
 import { Contract } from '@ethersproject/contracts'
+import { useRouter } from 'next/router'
+import { QueryParameters } from './constants'
+import { getAddress } from '@ethersproject/address'
 
 export function useWindowSize(): { width: number | undefined; height: number | undefined } {
   function getSize(): ReturnType<typeof useWindowSize> {
@@ -27,6 +30,24 @@ export function useWindowSize(): { width: number | undefined; height: number | u
   }, [])
 
   return windowSize
+}
+
+// https://usehooks.com/useDebounce/
+export function useDefaultedDebounce<T>(value: T, initialValue: T, delay: number): T {
+  const [defaultedDebounce, setDefaultedDebounce] = useState(initialValue)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDefaultedDebounce(value)
+    }, delay)
+
+    return (): void => {
+      clearTimeout(handler)
+      setDefaultedDebounce(initialValue)
+    }
+  }, [value, initialValue, delay])
+
+  return defaultedDebounce
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,6 +101,37 @@ export function useEagerConnect(): boolean {
   }, [tried, active])
 
   return tried
+}
+
+export function useQueryParameters(): {
+  [QueryParameters.CHAIN]: number | undefined
+  [QueryParameters.INPUT]: string | undefined
+  [QueryParameters.OUTPUT]: string | undefined
+} {
+  const { query } = useRouter()
+
+  const chainId = injected.supportedChainIds.includes(Number(query[QueryParameters.CHAIN]))
+    ? Number(query[QueryParameters.CHAIN])
+    : undefined
+
+  let input: string
+  try {
+    if (typeof query[QueryParameters.INPUT] === 'string') input = getAddress(query[QueryParameters.INPUT] as string)
+  } catch {}
+
+  let output: string
+  try {
+    if (typeof query[QueryParameters.OUTPUT] === 'string') output = getAddress(query[QueryParameters.OUTPUT] as string)
+  } catch {}
+
+  return useMemo(
+    () => ({
+      [QueryParameters.CHAIN]: chainId,
+      [QueryParameters.INPUT]: input,
+      [QueryParameters.OUTPUT]: output,
+    }),
+    [chainId, input, output]
+  )
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

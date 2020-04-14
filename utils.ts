@@ -17,6 +17,14 @@ export const CHAIN_ID_NAMES = {
   42: 'Kovan',
 }
 
+export const INFURA_PREFIXES = {
+  1: 'mainnet',
+  3: 'ropsten',
+  4: 'rinkeby',
+  5: 'goerli',
+  42: 'kovan',
+}
+
 export enum EtherscanType {
   Account,
   TokenBalance,

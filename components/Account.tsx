@@ -4,15 +4,30 @@ import { Web3Provider } from '@ethersproject/providers'
 import { useWeb3React } from '@web3-react/core'
 
 import { formatEtherscanLink, EtherscanType, shortenHex } from '../utils'
-import { injected } from '../connectors'
+import { injected, getNetwork } from '../connectors'
 import { useETHBalance, useTokenBalance } from '../data'
 import TokenLogo from './TokenLogo'
 import { WETH } from '@uniswap/sdk'
 import { useFirstToken, useSecondToken } from '../context'
+import { useEagerConnect, useQueryParameters } from '../hooks'
+import { QueryParameters } from '../constants'
 
-export default function Account({ tried }: { tried: boolean }): JSX.Element {
+export default function Account(): JSX.Element {
   const { active, error, activate, library, chainId, account } = useWeb3React<Web3Provider>()
 
+  // automatically try connecting to the injected connected where applicable
+  const tried = useEagerConnect()
+
+  // automatically try connecting to the network connector where applicable
+  const queryParameters = useQueryParameters()
+  const requiredChainId = queryParameters[QueryParameters.CHAIN]
+  useEffect(() => {
+    if (tried && !active && !error) {
+      activate(getNetwork(requiredChainId))
+    }
+  }, [tried, active, error, requiredChainId, activate])
+
+  // manage connecting state for injected connector
   const [connecting, setConnecting] = useState(false)
   useEffect(() => {
     if (active || error) {
@@ -43,7 +58,9 @@ export default function Account({ tried }: { tried: boolean }): JSX.Element {
   const { data: firstTokenBalance } = useTokenBalance(firstToken, account)
   const { data: secondTokenBalance } = useTokenBalance(secondToken, account)
 
-  if (!tried) {
+  if (error) {
+    return null
+  } else if (!tried) {
     return null
   } else if (typeof account !== 'string') {
     return (

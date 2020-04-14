@@ -13,6 +13,12 @@ export const ROUTER_ADDRESS = '0xcdbe04934d89e97a24bcc07c3562dc8cf17d8167'
 export const ZERO = JSBI.BigInt(0)
 export const MAX_UINT256 = JSBI.BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
 
+export enum QueryParameters {
+  INPUT = 'input',
+  OUTPUT = 'output',
+  CHAIN = 'chain',
+}
+
 export const ERC20 = [
   {
     anonymous: false,

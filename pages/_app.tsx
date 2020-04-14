@@ -5,23 +5,19 @@ import Head from 'next/head'
 import { ThemeProvider, CSSReset, ColorModeProvider } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { Web3ReactProvider, useWeb3React } from '@web3-react/core'
-import { useRouter } from 'next/router'
 
 import theme from '../theme'
-import { useEagerConnect } from '../hooks'
-import { injected } from '../connectors'
+import { useQueryParameters } from '../hooks'
 import Base from '../components/Base'
 import Favicon from '../components/Favicon'
 import Provider from '../context'
 import Layout from '../components/Layout'
+import Error from '../components/Error'
 import SwitchToChain from '../components/SwitchToChain'
 
 import '../styles.css'
 import '@reach/combobox/styles.css'
-
-export enum QueryParameters {
-  CHAIN = 'chain',
-}
+import { QueryParameters } from '../constants'
 
 function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Element {
   const [painted, setPainted] = useState(false)
@@ -29,13 +25,9 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
     setPainted(true)
   }, [])
 
-  const tried = useEagerConnect()
-
-  const { chainId } = useWeb3React()
-  const { query } = useRouter()
-  const requiredChainId = injected.supportedChainIds.includes(Number(query[QueryParameters.CHAIN]))
-    ? Number(query[QueryParameters.CHAIN])
-    : undefined
+  const { error, chainId } = useWeb3React()
+  const queryParameters = useQueryParameters()
+  const requiredChainId = queryParameters[QueryParameters.CHAIN]
 
   return !painted ? null : (
     <>
@@ -43,9 +35,12 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
       <ColorModeProvider>
         <Favicon />
         <Provider>
-          <Layout tried={tried}>
-            {!tried ? null : typeof requiredChainId === 'number' && requiredChainId !== chainId ? (
-              <SwitchToChain chainId={requiredChainId} />
+          <Layout>
+            {error ? (
+              <Error />
+            ) : typeof chainId !== 'number' ? null : typeof requiredChainId === 'number' &&
+              chainId !== requiredChainId ? (
+              <SwitchToChain requiredChainId={requiredChainId} />
             ) : (
               <Component />
             )}

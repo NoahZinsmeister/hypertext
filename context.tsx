@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import { Token } from '@uniswap/sdk'
 import { Contract } from '@ethersproject/contracts'
@@ -95,7 +95,7 @@ function useHypertextContext() {
   return useContext(HypertextContext)
 }
 
-export default function Provider({ children }: { children: JSX.Element }): JSX.Element {
+export default function Provider({ children }: { children: ReactNode }): JSX.Element {
   // global state
   const [firstToken, setFirstToken] = useState<Token>()
   const [secondToken, setSecondToken] = useState<Token>()
@@ -119,7 +119,15 @@ export default function Provider({ children }: { children: JSX.Element }): JSX.E
       value={useMemo(
         () => [
           { firstToken, secondToken, approveMax, deadline, slippage, transactions, tokens },
-          { setFirstToken, setSecondToken, setApproveMax, setDeadline, setSlippage, setTransactions, setTokens },
+          {
+            setFirstToken,
+            setSecondToken,
+            setApproveMax,
+            setDeadline,
+            setSlippage,
+            setTransactions,
+            setTokens,
+          },
         ],
         [
           firstToken,

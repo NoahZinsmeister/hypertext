@@ -5,14 +5,13 @@ import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { TradeType, TokenAmount, Trade, JSBI, WETH } from '@uniswap/sdk'
 import { Stack, Button, Box, Text, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/core'
-import { getAddress } from '@ethersproject/address'
 
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
 import { useTokenByAddress } from '../tokens'
-import { useRoute, useContract } from '../hooks'
+import { useRoute, useContract, useQueryParameters } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
-import { ROUTER_ADDRESS, ROUTER, ZERO, MAX_UINT256, ERC20 } from '../constants'
+import { ROUTER_ADDRESS, ROUTER, ZERO, MAX_UINT256, ERC20, QueryParameters } from '../constants'
 import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
 
 import TradeSummary from '../components/TradeSummary'
@@ -104,24 +103,10 @@ function reducer(
   }
 }
 
-enum QueryParameters {
-  INPUT = 'input',
-  OUTPUT = 'output',
-}
-
 export default function Buy(): JSX.Element {
-  const { pathname, query, replace } = useRouter()
-  const queryParameters: { [parameter: string]: string | undefined } = {}
-  try {
-    queryParameters[QueryParameters.INPUT] =
-      typeof query[QueryParameters.INPUT] === 'string' ? getAddress(query[QueryParameters.INPUT] as string) : undefined
-  } catch {}
-  try {
-    queryParameters[QueryParameters.OUTPUT] =
-      typeof query[QueryParameters.OUTPUT] === 'string'
-        ? getAddress(query[QueryParameters.OUTPUT] as string)
-        : undefined
-  } catch {}
+  const { query, pathname, replace } = useRouter()
+
+  const queryParameters = useQueryParameters()
 
   const { account, chainId } = useWeb3React()
 
@@ -368,7 +353,7 @@ export default function Buy(): JSX.Element {
 
         <Box ml="0.8rem">
           {!!!trade ? (
-            <Link href={{ pathname: '/sell', query }} passHref>
+            <Link href={{ pathname: '/sell', query: {} }} passHref>
               <Button as="a" variant="ghost" variantColor="green">
                 <Text fontSize="3xl">Buy</Text>
               </Button>

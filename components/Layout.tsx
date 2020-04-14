@@ -8,8 +8,9 @@ import ColorBox from './ColorBox'
 import Settings from './Settings'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
+import { ReactNode } from 'react'
 
-export default function Layout({ tried, children }: { tried: boolean; children: JSX.Element }): JSX.Element {
+export default function Layout({ children }: { children: ReactNode }): JSX.Element {
   const { chainId } = useWeb3React()
   const isTestnet = typeof chainId === 'number' && chainId !== 1
 
@@ -36,7 +37,7 @@ export default function Layout({ tried, children }: { tried: boolean; children: 
       >
         <Flex justifyContent="space-between" overflowX="auto" minHeight="9.5rem" maxHeight="9.5rem" p="1rem" pb={0}>
           <IconButton icon="settings" variant="ghost" onClick={onOpenSettings} aria-label="Settings" />
-          <Account tried={tried} />
+          <Account />
         </Flex>
 
         <Flex flexGrow={1} direction="column" overflowY="auto">
