@@ -2,7 +2,6 @@ import useSWR, { responseInterface } from 'swr'
 import { Token, TokenAmount, Pair, JSBI, ChainId } from '@uniswap/sdk'
 import { useWeb3React } from '@web3-react/core'
 import { Contract } from '@ethersproject/contracts'
-import { request } from 'graphql-request'
 
 import { ADDRESS_ZERO, ERC20, PAIR, ZERO } from './constants'
 import { useContract } from './hooks'
@@ -149,6 +148,8 @@ interface RemoteToken {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getRemoteTokens(_: DataType, chainId: number, searchQuery: string): Promise<RemoteToken[]> {
+  const { request } = await import('graphql-request')
+
   return request(
     chainId === ChainId.RINKEBY
       ? 'https://api.thegraph.com/subgraphs/name/noahzinsmeister/uniswapv2test'
