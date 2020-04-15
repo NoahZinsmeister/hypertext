@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Image, Icon } from '@chakra-ui/core'
 import { Token, WETH } from '@uniswap/sdk'
-import Vibrant from 'node-vibrant'
 
 let BROKEN: { [chainId: number]: { [address: string]: boolean } } = {}
 
@@ -62,30 +61,32 @@ export function TokenLogoColor({
       !BROKEN[token.chainId]?.[token.address] &&
       !SWATCHES[token.chainId]?.[token.address]
     ) {
-      Vibrant.from(
-        `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
+      import('node-vibrant').then(({ default: Vibrant }) =>
+        Vibrant.from(
+          `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
+        )
+          .getPalette()
+          .then((palette) => {
+            SWATCHES = {
+              ...SWATCHES,
+              [token.chainId]: {
+                ...SWATCHES?.[token.chainId],
+                [token.address]: palette.Vibrant,
+              },
+            }
+            setDummy((dummy) => dummy + 1)
+          })
+          .catch(() => {
+            BROKEN = {
+              ...BROKEN,
+              [token.chainId]: {
+                ...BROKEN?.[token.chainId],
+                [token.address]: true,
+              },
+            }
+            setDummy((dummy) => dummy + 1)
+          })
       )
-        .getPalette()
-        .then((palette) => {
-          SWATCHES = {
-            ...SWATCHES,
-            [token.chainId]: {
-              ...SWATCHES?.[token.chainId],
-              [token.address]: palette.Vibrant,
-            },
-          }
-          setDummy((dummy) => dummy + 1)
-        })
-        .catch(() => {
-          BROKEN = {
-            ...BROKEN,
-            [token.chainId]: {
-              ...BROKEN?.[token.chainId],
-              [token.address]: true,
-            },
-          }
-          setDummy((dummy) => dummy + 1)
-        })
     }
   }, [token])
 

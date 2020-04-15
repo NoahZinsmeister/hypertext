@@ -1,14 +1,16 @@
 import { Flex, IconButton, useDisclosure, Badge, LightMode } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
+import dynamic from 'next/dynamic'
 
 import { CHAIN_ID_NAMES } from '../utils'
 import { useBodyKeyDown } from '../hooks'
 import { useTransactions } from '../context'
 import ColorBox from './ColorBox'
-import Settings from './Settings'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
 import { ReactNode } from 'react'
+
+const Settings = dynamic(() => import('./Settings'))
 
 export default function Layout({ children }: { children: ReactNode }): JSX.Element {
   const { chainId } = useWeb3React()
