@@ -223,7 +223,7 @@ export default function Buy(): JSX.Element {
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
   const danger = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 10
 
-  // get allowance and balance for validation prurposes
+  // get allowance and balance for validation purposes
   const router = useContract(ROUTER_ADDRESS, ROUTER, true)
   const inputAllowance = useTokenAllowance(tokens[Field.INPUT], account, router?.address)
   const allowance = tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId])

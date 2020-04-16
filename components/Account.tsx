@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Button, Stack, Text, Box } from '@chakra-ui/core'
+import { useState, useEffect, Suspense } from 'react'
+import { Button, Stack, Text, Box, IconButton } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { useWeb3React } from '@web3-react/core'
 
@@ -11,6 +11,25 @@ import { WETH } from '@uniswap/sdk'
 import { useFirstToken, useSecondToken } from '../context'
 import { useEagerConnect, useQueryParameters } from '../hooks'
 import { QueryParameters } from '../constants'
+import ErrorBoundary from './ErrorBoundary'
+
+function ETHBalance(): JSX.Element {
+  const { account } = useWeb3React<Web3Provider>()
+  const { data } = useETHBalance(account, true)
+
+  return (
+    <Button
+      variant="outline"
+      cursor="default"
+      _hover={{}}
+      _active={{}}
+      _focus={{}}
+      style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
+    >
+      Ξ {data.toSignificant(4, { groupSeparator: ',' })}
+    </Button>
+  )
+}
 
 export default function Account(): JSX.Element {
   const { active, error, activate, library, chainId, account } = useWeb3React<Web3Provider>()
@@ -52,7 +71,6 @@ export default function Account(): JSX.Element {
     }
   }, [library, account, chainId])
 
-  const { data: ETHBalance } = useETHBalance(account)
   const [firstToken] = useFirstToken()
   const [secondToken] = useSecondToken()
   const { data: firstTokenBalance } = useTokenBalance(firstToken, account)
@@ -81,19 +99,37 @@ export default function Account(): JSX.Element {
   return (
     <Stack direction="column" align="flex-end">
       <Stack direction="row" spacing={0} whiteSpace="nowrap" m={0}>
-        <Button
-          variant="outline"
-          isDisabled
-          isLoading={!!!ETHBalance}
-          _disabled={{
-            opacity: 1,
-            cursor: 'default',
-          }}
-          _hover={{}}
-          style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
+        <ErrorBoundary
+          fallback={
+            <IconButton
+              variant="outline"
+              icon="warning"
+              aria-label="Failed"
+              isDisabled
+              cursor="default !important"
+              _hover={{}}
+              _active={{}}
+              style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
+            />
+          }
         >
-          Ξ {ETHBalance?.toSignificant(4, { groupSeparator: ',' })}
-        </Button>
+          <Suspense
+            fallback={
+              <Button
+                variant="outline"
+                isLoading
+                cursor="default !important"
+                _hover={{}}
+                _active={{}}
+                style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
+              >
+                {null}
+              </Button>
+            }
+          >
+            <ETHBalance />
+          </Suspense>
+        </ErrorBoundary>
 
         <Button
           as="a"

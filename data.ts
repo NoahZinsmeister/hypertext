@@ -26,11 +26,12 @@ function getETHBalance(library: any): (_: DataType, chainId: number, address: st
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useETHBalance(address?: string): responseInterface<TokenAmount, any> {
+export function useETHBalance(address?: string, suspense = false): responseInterface<TokenAmount, any> {
   const { chainId, library } = useWeb3React()
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string' && !!library
   return useSWR(shouldFetch ? [DataType.ETHBalance, chainId, address] : null, getETHBalance(library), {
     refreshInterval: 45 * 1000,
+    suspense,
   })
 }
 
