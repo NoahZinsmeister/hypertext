@@ -1,14 +1,15 @@
-import { Flex, IconButton, useDisclosure, Badge, LightMode } from '@chakra-ui/core'
+import { Flex, IconButton, useDisclosure, Badge, LightMode, Stack } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
 import dynamic from 'next/dynamic'
 
 import { CHAIN_ID_NAMES } from '../utils'
 import { useBodyKeyDown } from '../hooks'
-import { useTransactions } from '../context'
+import { useTransactions, useFirstToken, useSecondToken } from '../context'
 import ColorBox from './ColorBox'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
 import { ReactNode } from 'react'
+import TokenBalance from './TokenBalance'
 
 const Settings = dynamic(() => import('./Settings'))
 
@@ -16,18 +17,17 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
   const { chainId } = useWeb3React()
   const isTestnet = typeof chainId === 'number' && chainId !== 1
 
-  const [transactions] = useTransactions()
-
   const { isOpen: isOpenSettings, onOpen: onOpenSettings, onClose: onCloseSettings } = useDisclosure()
   useBodyKeyDown('s', onOpenSettings, isOpenSettings)
+
+  const [firstToken] = useFirstToken()
+  const [secondToken] = useSecondToken()
+
+  const [transactions] = useTransactions()
 
   return (
     <>
       <Settings isOpen={isOpenSettings} onClose={onCloseSettings} />
-
-      {transactions.map((hash) => (
-        <TransactionToast key={hash} hash={hash} />
-      ))}
 
       <ColorBox
         as={Flex}
@@ -37,10 +37,23 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
         minHeight="100vh"
         maxHeight="100vh"
       >
-        <Flex justifyContent="space-between" overflowX="auto" minHeight="9.5rem" maxHeight="9.5rem" p="1rem" pb={0}>
+        <Flex justifyContent="space-between" flexShrink={0} overflowX="auto" p="1rem">
           <IconButton icon="settings" variant="ghost" onClick={onOpenSettings} aria-label="Settings" />
           <Account />
         </Flex>
+
+        <Stack
+          position="absolute"
+          top={0}
+          right={0}
+          m={isTestnet ? '1.5rem' : '1rem'}
+          mt={isTestnet ? '5rem' : '4.5rem'}
+          alignItems="flex-end"
+          spacing="1rem"
+        >
+          <TokenBalance token={firstToken} />
+          <TokenBalance token={secondToken} />
+        </Stack>
 
         <Flex flexGrow={1} direction="column" overflowY="auto">
           {children}
@@ -60,6 +73,23 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
             </LightMode>
           )}
         </Flex>
+
+        {transactions.length > 0 && (
+          <Stack
+            position="absolute"
+            bottom={0}
+            right={0}
+            m={isTestnet ? '1.5rem' : '1rem'}
+            alignItems="flex-end"
+            spacing={0}
+          >
+            {transactions
+              .filter((transaction) => transaction.chainId === chainId)
+              .map(({ hash }) => (
+                <TransactionToast key={hash} hash={hash} />
+              ))}
+          </Stack>
+        )}
       </ColorBox>
     </>
   )

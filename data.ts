@@ -45,8 +45,12 @@ function getTokenBalance(
       .then((balance: { toString: () => string }) => new TokenAmount(token, balance.toString()))
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useTokenBalance(token?: Token, address?: string): responseInterface<TokenAmount, any> {
+export function useTokenBalance(
+  token?: Token,
+  address?: string,
+  suspense = false
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): responseInterface<TokenAmount, any> {
   const contract = useContract(token?.address, ERC20)
   const shouldFetch = !!contract && typeof address === 'string'
   return useSWR(
@@ -54,6 +58,7 @@ export function useTokenBalance(token?: Token, address?: string): responseInterf
     getTokenBalance(contract, token),
     {
       refreshInterval: 45 * 1000,
+      suspense,
     }
   )
 }

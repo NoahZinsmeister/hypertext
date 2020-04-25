@@ -1,4 +1,14 @@
-import { createContext, useContext, useState, useEffect, useMemo, useCallback, ReactNode } from 'react'
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  ReactNode,
+  Dispatch,
+  SetStateAction,
+} from 'react'
 import { useWeb3React } from '@web3-react/core'
 import { Token } from '@uniswap/sdk'
 import { Contract } from '@ethersproject/contracts'
@@ -22,8 +32,8 @@ function useLocalStorage<T, S = T>(
     serialize: (toSerialize): S => (toSerialize as unknown) as S,
     deserialize: (toDeserialize): T => (toDeserialize as unknown) as T,
   }
-): [T, (value: T) => void] {
-  const [value, setValue] = useState(() => {
+): [T, Dispatch<SetStateAction<T>>] {
+  const [value, setValue] = useState<T>(() => {
     try {
       return deserialize(JSON.parse(window.localStorage.getItem(key))) ?? defaultValue
     } catch {
@@ -67,6 +77,11 @@ function deserializeTokens(serializedTokens: ReturnType<typeof serializeTokens>)
   )
 }
 
+interface Transaction {
+  chainId: number
+  hash: string
+}
+
 const HypertextContext = createContext<
   [
     {
@@ -75,20 +90,20 @@ const HypertextContext = createContext<
       approveMax: boolean
       deadline: number
       slippage: number
-      transactions: string[]
+      transactions: Transaction[]
       tokens: Token[]
     },
     {
-      setFirstToken: (token: Token) => void
-      setSecondToken: (token: Token) => void
-      setApproveMax: (approveMax: boolean) => void
-      setDeadline: (deadline: number) => void
-      setSlippage: (slippage: number) => void
-      setTransactions: (transactions: string[]) => void
-      setTokens: (tokens: Token[]) => void
+      setFirstToken: Dispatch<SetStateAction<Token>>
+      setSecondToken: Dispatch<SetStateAction<Token>>
+      setApproveMax: Dispatch<SetStateAction<boolean>>
+      setDeadline: Dispatch<SetStateAction<number>>
+      setSlippage: Dispatch<SetStateAction<number>>
+      setTransactions: Dispatch<SetStateAction<Transaction[]>>
+      setTokens: Dispatch<SetStateAction<Token[]>>
     }
   ]
->([] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+>([{}, {}] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function useHypertextContext() {
@@ -104,7 +119,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
   const [approveMax, setApproveMax] = useLocalStorage<boolean>(LocalStorageKeys.ApproveMax, DEFAULT_APPROVE_MAX)
   const [deadline, setDeadline] = useLocalStorage<number>(LocalStorageKeys.Deadline, DEFAULT_DEADLINE)
   const [slippage, setSlippage] = useLocalStorage<number>(LocalStorageKeys.Slippage, DEFAULT_SLIPPAGE)
-  const [transactions, setTransactions] = useLocalStorage<string[]>(LocalStorageKeys.Transactions, [])
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>(LocalStorageKeys.Transactions, [])
   const [tokens, setTokens] = useLocalStorage<Token[], ReturnType<typeof serializeTokens>>(
     LocalStorageKeys.Tokens,
     [],
@@ -181,24 +196,31 @@ export function useSlippage(): [number, ReturnType<typeof useHypertextContext>[1
 }
 
 export function useTransactions(): [
-  string[],
-  { addTransaction: (hash: string) => void; removeTransaction: (hash: string) => void }
+  Transaction[],
+  {
+    addTransaction: (chainId: number, hash: string) => void
+    removeTransaction: (chainId: number, hash: string) => void
+  }
 ] {
   const [{ transactions }, { setTransactions }] = useHypertextContext()
 
   const addTransaction = useCallback(
-    (hash: string) => {
-      if (!transactions.some((transaction) => transaction === hash)) {
-        setTransactions(transactions.concat([hash]))
-      }
+    (chainId: number, hash: string) => {
+      setTransactions((transactions) =>
+        transactions
+          .filter((transaction) => !(transaction.chainId === chainId && transaction.hash === hash))
+          .concat([{ chainId, hash }])
+      )
     },
-    [transactions, setTransactions]
+    [setTransactions]
   )
   const removeTransaction = useCallback(
-    (hash: string) => {
-      setTransactions(transactions.filter((transaction) => transaction !== hash))
+    (chainId: number, hash: string) => {
+      setTransactions((transactions) =>
+        transactions.filter((transaction) => !(transaction.chainId === chainId && transaction.hash === hash))
+      )
     },
-    [transactions, setTransactions]
+    [setTransactions]
   )
 
   return [transactions, { addTransaction, removeTransaction }]
@@ -222,20 +244,20 @@ export function useTokens(): [
 
       if (decimals !== null) {
         const token = new Token(chainId, address, decimals, symbol, name)
-        setTokens(tokens.concat([token]))
+        setTokens((tokens) => tokens.filter((currentToken) => !currentToken.equals(token)).concat([token]))
         return token
       } else {
         return null
       }
     },
-    [library, chainId, tokens, setTokens]
+    [library, chainId, setTokens]
   )
 
   const removeToken = useCallback(
     (token: Token) => {
-      setTokens(tokens.filter((currentToken) => !currentToken.equals(token)))
+      setTokens((tokens) => tokens.filter((currentToken) => !currentToken.equals(token)))
     },
-    [tokens, setTokens]
+    [setTokens]
   )
 
   return [tokens, { addTokenByAddress, removeToken }]

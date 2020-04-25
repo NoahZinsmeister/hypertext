@@ -94,7 +94,18 @@ export default function TokenSelect({
         .filter((address) => tokens.every((token) => token.address !== address)) // filter out tokens already in our list
         .map((address) => remoteTokens.find((remoteToken) => remoteToken.address === address)),
     [remoteTokens, tokens]
-  )
+  ).sort((a, b) => {
+    a.symbol
+    const aExact = a.symbol.slice(0, value.length).toLowerCase() === value.toLowerCase()
+    const bExact = b.symbol.slice(0, value.length).toLowerCase() === value.toLowerCase()
+    if (aExact && !bExact) {
+      return -1
+    } else if (!aExact && bExact) {
+      return 1
+    } else {
+      return a.symbol.toLowerCase() > b.symbol.toLowerCase() ? 1 : -1
+    }
+  })
 
   function onChange(event: ChangeEvent<HTMLInputElement>): void {
     onAddressSelect(undefined)

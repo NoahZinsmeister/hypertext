@@ -321,7 +321,7 @@ export default function Buy(): JSX.Element {
       await inputToken
         .approve(ROUTER_ADDRESS, `0x${(approveMax ? MAX_UINT256 : parsed[Field.INPUT].raw).toString(16)}`)
         .then(async ({ hash }) => {
-          addTransaction(hash)
+          addTransaction(chainId, hash)
           approved = true
           mockGas = true
         })
@@ -333,7 +333,7 @@ export default function Buy(): JSX.Element {
     if (approved) {
       await swap(mockGas)
         .then(({ hash }) => {
-          addTransaction(hash)
+          addTransaction(chainId, hash)
           dispatch({
             type: ActionType.TYPE,
             payload: { field: independentField, value: '' },

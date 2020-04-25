@@ -1,26 +1,24 @@
 import { useState, useEffect, Suspense } from 'react'
-import { Button, Stack, Text, Box, IconButton } from '@chakra-ui/core'
+import { Button, Stack, Box, IconButton } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { useWeb3React } from '@web3-react/core'
 
 import { formatEtherscanLink, EtherscanType, shortenHex } from '../utils'
 import { injected, getNetwork } from '../connectors'
-import { useETHBalance, useTokenBalance } from '../data'
-import TokenLogo from './TokenLogo'
-import { WETH } from '@uniswap/sdk'
-import { useFirstToken, useSecondToken } from '../context'
+import { useETHBalance } from '../data'
 import { useEagerConnect, useQueryParameters } from '../hooks'
 import { QueryParameters } from '../constants'
 import ErrorBoundary from './ErrorBoundary'
 
 function ETHBalance(): JSX.Element {
-  const { account } = useWeb3React<Web3Provider>()
+  const { account } = useWeb3React()
   const { data } = useETHBalance(account, true)
 
   return (
     <Button
       variant="outline"
       cursor="default"
+      tabIndex={-1}
       _hover={{}}
       _active={{}}
       _focus={{}}
@@ -57,24 +55,21 @@ export default function Account(): JSX.Element {
   const [ENSName, setENSName] = useState<string>('')
   useEffect(() => {
     if (library && account) {
+      let stale = false
       library
         .lookupAddress(account)
         .then((name) => {
-          if (typeof name === 'string') {
+          if (!stale && typeof name === 'string') {
             setENSName(name)
           }
         })
         .catch(() => {}) // eslint-disable-line @typescript-eslint/no-empty-function
       return (): void => {
+        stale = true
         setENSName('')
       }
     }
   }, [library, account, chainId])
-
-  const [firstToken] = useFirstToken()
-  const [secondToken] = useSecondToken()
-  const { data: firstTokenBalance } = useTokenBalance(firstToken, account)
-  const { data: secondTokenBalance } = useTokenBalance(secondToken, account)
 
   if (error) {
     return null
@@ -97,89 +92,51 @@ export default function Account(): JSX.Element {
   }
 
   return (
-    <Stack direction="column" align="flex-end">
-      <Stack direction="row" spacing={0} whiteSpace="nowrap" m={0}>
-        <ErrorBoundary
+    <Stack direction="row" spacing={0} whiteSpace="nowrap" m={0}>
+      <ErrorBoundary
+        fallback={
+          <IconButton
+            variant="outline"
+            icon="warning"
+            aria-label="Failed"
+            isDisabled
+            cursor="default !important"
+            _hover={{}}
+            _active={{}}
+            style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
+          />
+        }
+      >
+        <Suspense
           fallback={
-            <IconButton
+            <Button
               variant="outline"
-              icon="warning"
-              aria-label="Failed"
-              isDisabled
+              isLoading
               cursor="default !important"
               _hover={{}}
               _active={{}}
               style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
-            />
+            >
+              {null}
+            </Button>
           }
         >
-          <Suspense
-            fallback={
-              <Button
-                variant="outline"
-                isLoading
-                cursor="default !important"
-                _hover={{}}
-                _active={{}}
-                style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
-              >
-                {null}
-              </Button>
-            }
-          >
-            <ETHBalance />
-          </Suspense>
-        </ErrorBoundary>
+          <ETHBalance />
+        </Suspense>
+      </ErrorBoundary>
 
-        <Button
-          as="a"
-          rightIcon="external-link"
-          style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-          {...{
-            href: formatEtherscanLink(EtherscanType.Account, [chainId, account]),
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          }}
-        >
-          {ENSName || `${shortenHex(account, 4)}`}
-        </Button>
-      </Stack>
-
-      {!!firstToken && !firstToken.equals(WETH[firstToken.chainId]) && (
-        <Button
-          as="a"
-          rightIcon="external-link"
-          variant="outline"
-          width="min-content"
-          isLoading={!!!firstTokenBalance}
-          {...{
-            href: formatEtherscanLink(EtherscanType.TokenBalance, [firstToken, account]),
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          }}
-        >
-          <TokenLogo token={firstToken} size="1.5rem" />
-          <Text ml="0.5rem">{firstTokenBalance?.toSignificant(6, { groupSeparator: ',' })}</Text>
-        </Button>
-      )}
-
-      {!!secondToken && !secondToken.equals(WETH[secondToken.chainId]) && (
-        <Button
-          as="a"
-          rightIcon="external-link"
-          variant="outline"
-          width="min-content"
-          isLoading={!!!secondTokenBalance}
-          {...{
-            href: formatEtherscanLink(EtherscanType.TokenBalance, [secondToken, account]),
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          }}
-        >
-          <TokenLogo token={secondToken} size="1.5rem" />
-          <Text ml="0.5rem">{secondTokenBalance?.toSignificant(6, { groupSeparator: ',' })}</Text>
-        </Button>
-      )}
+      <Button
+        as="a"
+        rightIcon="external-link"
+        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+        {...{
+          href: formatEtherscanLink(EtherscanType.Account, [chainId, account]),
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        }}
+      >
+        {ENSName || `${shortenHex(account, 4)}`}
+      </Button>
     </Stack>
   )
 }
