@@ -16,6 +16,7 @@ import { Contract } from '@ethersproject/contracts'
 import { DEFAULT_APPROVE_MAX, DEFAULT_DEADLINE, DEFAULT_SLIPPAGE, ERC20, ERC20_BYTES32 } from './constants'
 
 enum LocalStorageKeys {
+  Version = 'version',
   ApproveMax = 'approveMax',
   Deadline = 'deadline',
   Slippage = 'slippage',
@@ -23,9 +24,13 @@ enum LocalStorageKeys {
   Tokens = 'tokens',
 }
 
+const NO_VERSION = -1
+const CURRENT_VERSION = 0
+
 function useLocalStorage<T, S = T>(
   key: LocalStorageKeys,
   defaultValue: T,
+  overrideLookup = false,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   { serialize, deserialize }: { serialize: (toSerialize: T) => S; deserialize: (toDeserialize: S) => T } = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,10 +39,14 @@ function useLocalStorage<T, S = T>(
   }
 ): [T, Dispatch<SetStateAction<T>>] {
   const [value, setValue] = useState<T>(() => {
-    try {
-      return deserialize(JSON.parse(window.localStorage.getItem(key))) ?? defaultValue
-    } catch {
+    if (overrideLookup) {
       return defaultValue
+    } else {
+      try {
+        return deserialize(JSON.parse(window.localStorage.getItem(key))) ?? defaultValue
+      } catch {
+        return defaultValue
+      }
     }
   })
 
@@ -115,14 +124,26 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
   const [firstToken, setFirstToken] = useState<Token>()
   const [secondToken, setSecondToken] = useState<Token>()
 
+  // versioning
+  const [version, setVersion] = useLocalStorage<number>(LocalStorageKeys.Version, NO_VERSION)
+  // after it's been used to sychronously + selectively override localstorage keys, bump the version as soon as we can
+  useEffect(() => {
+    setVersion(CURRENT_VERSION)
+  }, [setVersion])
+
   // global localstorage state
   const [approveMax, setApproveMax] = useLocalStorage<boolean>(LocalStorageKeys.ApproveMax, DEFAULT_APPROVE_MAX)
   const [deadline, setDeadline] = useLocalStorage<number>(LocalStorageKeys.Deadline, DEFAULT_DEADLINE)
   const [slippage, setSlippage] = useLocalStorage<number>(LocalStorageKeys.Slippage, DEFAULT_SLIPPAGE)
-  const [transactions, setTransactions] = useLocalStorage<Transaction[]>(LocalStorageKeys.Transactions, [])
+  const [transactions, setTransactions] = useLocalStorage<Transaction[]>(
+    LocalStorageKeys.Transactions,
+    [],
+    version < 0 ? true : false // pre-version0 localstorage transactions didn't include chainId and must be overriden
+  )
   const [tokens, setTokens] = useLocalStorage<Token[], ReturnType<typeof serializeTokens>>(
     LocalStorageKeys.Tokens,
     [],
+    false,
     {
       serialize: serializeTokens,
       deserialize: deserializeTokens,
