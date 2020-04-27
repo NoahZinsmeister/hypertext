@@ -2,8 +2,9 @@ import useSWR, { responseInterface } from 'swr'
 import { Token, TokenAmount, Pair, JSBI, ChainId } from '@uniswap/sdk'
 import { useWeb3React } from '@web3-react/core'
 import { Contract } from '@ethersproject/contracts'
+import { parseBytes32String } from '@ethersproject/strings'
 
-import { ADDRESS_ZERO, ERC20, PAIR, ZERO } from './constants'
+import { ZERO, ADDRESS_ZERO, ERC20, ERC20_BYTES32, PAIR } from './constants'
 import { useContract } from './hooks'
 import { getAddress } from '@ethersproject/address'
 
@@ -12,6 +13,7 @@ export enum DataType {
   TokenBalance,
   TokenAllowance,
   Reserves,
+  Token,
   RemoteTokens,
 }
 
@@ -126,6 +128,43 @@ export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<P
   )
 }
 
+function getOnchainToken(
+  contract: Contract,
+  contractBytes32: Contract
+): (_: DataType, chainId: number, address: string) => Promise<Token | null> {
+  return async (_: DataType, chainId: number, address: string): Promise<Token | null> => {
+    const [decimals, symbol, name] = await Promise.all([
+      contract.decimals().catch(() => null),
+      contract.symbol().catch(() =>
+        contractBytes32
+          .symbol()
+          .then(parseBytes32String)
+          .catch(() => 'UNKNOWN')
+      ),
+      contract.name().catch(() =>
+        contractBytes32
+          .name()
+          .then(parseBytes32String)
+          .catch(() => 'Unknown')
+      ),
+    ])
+
+    return decimals === null ? null : new Token(chainId, address, decimals, symbol, name)
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useOnchainToken(address?: string, suspense = false): responseInterface<Token | null, any> {
+  const { chainId } = useWeb3React()
+  const contract = useContract(address, ERC20)
+  const contractBytes32 = useContract(address, ERC20_BYTES32)
+  const shouldFetch = typeof chainId === 'number' && typeof address === 'string'
+  return useSWR(shouldFetch ? [DataType.Token, chainId, address] : null, getOnchainToken(contract, contractBytes32), {
+    dedupingInterval: 60 * 10 * 1000,
+    suspense,
+  })
+}
+
 const rinkebyQuery = `
 query getRemoteTokens($searchQuery: String!) {
   tokens(where: { symbol_contains: $searchQuery }) {
@@ -169,18 +208,19 @@ async function getRemoteTokens(_: DataType, chainId: number, searchQuery: string
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (token: any): RemoteToken => ({
         address: getAddress(chainId === ChainId.RINKEBY ? token.id : token.tokenAddress),
-        symbol: chainId === ChainId.RINKEBY ? token.symbol : token.tokenSymbol,
-        name: chainId === ChainId.RINKEBY ? token.name : token.tokenName,
+        symbol: (chainId === ChainId.RINKEBY ? token.symbol : token.tokenSymbol) ?? 'UNKNOWN',
+        name: (chainId === ChainId.RINKEBY ? token.name : token.tokenName) ?? 'Unknown',
       })
     )
   )
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useRemoteTokens(searchQuery = ''): responseInterface<RemoteToken[], any> {
+export function useRemoteTokens(query = '', suspense = false): responseInterface<RemoteToken[], any> {
   const { chainId } = useWeb3React()
-  const shouldFetch = (chainId === ChainId.RINKEBY || chainId === ChainId.MAINNET) && searchQuery.length > 0
-  return useSWR(shouldFetch ? [DataType.RemoteTokens, chainId, searchQuery] : null, getRemoteTokens, {
+  const shouldFetch = (chainId === ChainId.RINKEBY || chainId === ChainId.MAINNET) && query.length > 0
+  return useSWR(shouldFetch ? [DataType.RemoteTokens, chainId, query] : null, getRemoteTokens, {
     dedupingInterval: 60 * 10 * 1000,
+    suspense,
   })
 }

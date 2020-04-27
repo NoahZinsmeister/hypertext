@@ -247,31 +247,20 @@ export function useTransactions(): [
   return [transactions, { addTransaction, removeTransaction }]
 }
 
-export function useTokens(): [
+export function useLocalStorageTokens(): [
   Token[],
-  { addTokenByAddress: (address: string) => Promise<Token | null>; removeToken: (token: Token) => void }
+  {
+    addToken: (token: Token) => void
+    removeToken: (token: Token) => void
+  }
 ] {
-  const { library, chainId } = useWeb3React()
   const [{ tokens }, { setTokens }] = useHypertextContext()
 
-  const addTokenByAddress = useCallback(
-    async (address: string) => {
-      const contract = new Contract(address, ERC20, library)
-      const [decimals, symbol, name] = await Promise.all([
-        contract.decimals().catch(() => null),
-        contract.symbol().catch(() => new Contract(address, ERC20_BYTES32, library).catch(() => 'UNKNOWN')),
-        contract.name().catch(() => new Contract(address, ERC20_BYTES32, library).catch(() => 'Unknown')),
-      ])
-
-      if (decimals !== null) {
-        const token = new Token(chainId, address, decimals, symbol, name)
-        setTokens((tokens) => tokens.filter((currentToken) => !currentToken.equals(token)).concat([token]))
-        return token
-      } else {
-        return null
-      }
+  const addToken = useCallback(
+    async (token: Token) => {
+      setTokens((tokens) => tokens.filter((currentToken) => !currentToken.equals(token)).concat([token]))
     },
-    [library, chainId, setTokens]
+    [setTokens]
   )
 
   const removeToken = useCallback(
@@ -281,5 +270,5 @@ export function useTokens(): [
     [setTokens]
   )
 
-  return [tokens, { addTokenByAddress, removeToken }]
+  return [tokens, { addToken, removeToken }]
 }

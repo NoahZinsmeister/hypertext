@@ -1,8 +1,9 @@
-import { useMemo, useEffect, useState } from 'react'
+import { useMemo, useEffect } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import { ChainId, WETH, Token } from '@uniswap/sdk'
 
-import { useTokens } from './context'
+import { useLocalStorageTokens } from './context'
+import { useOnchainToken } from './data'
 
 export const DEFAULT_TOKENS = [
   ...Object.values(WETH),
@@ -14,9 +15,9 @@ export const DEFAULT_TOKENS = [
   new Token(ChainId.KOVAN, '0xAaF64BFCC32d0F15873a02163e7E500671a4ffcD', 18, 'MKR', 'Maker'),
 ]
 
-export function useAllTokens(): [Token[], ReturnType<typeof useTokens>[1]] {
+export function useAllTokens(): [Token[], ReturnType<typeof useLocalStorageTokens>[1]] {
   const { chainId } = useWeb3React()
-  const [tokens, { addTokenByAddress, removeToken }] = useTokens()
+  const [tokens, { addToken, removeToken }] = useLocalStorageTokens()
 
   return [
     useMemo(() => {
@@ -30,36 +31,22 @@ export function useAllTokens(): [Token[], ReturnType<typeof useTokens>[1]] {
         }
       })
     }, [tokens, chainId]),
-    { addTokenByAddress, removeToken },
+    { addToken, removeToken },
   ]
 }
 
-let BROKEN: { [chainId: number]: { [address: string]: boolean } } = {}
-
 export function useTokenByAddress(tokenAddress?: string): Token | undefined {
-  const { chainId } = useWeb3React()
-  const [allTokens, { addTokenByAddress }] = useAllTokens()
+  const [allTokens, { addToken }] = useAllTokens()
 
-  const existingToken = useMemo(() => allTokens.filter((token) => token.address === tokenAddress)[0], [
-    allTokens,
-    tokenAddress,
-  ])
+  const token = useMemo(() => allTokens.filter((token) => token.address === tokenAddress)[0], [allTokens, tokenAddress])
 
-  const [, setDummy] = useState(0)
+  // fetches onchain data for tokens if they're not in our list already, then adds them to the list
+  const { data } = useOnchainToken(token ? undefined : tokenAddress)
   useEffect(() => {
-    if (typeof chainId === 'number' && tokenAddress && !existingToken && !BROKEN[chainId]?.[tokenAddress]) {
-      addTokenByAddress(tokenAddress).catch(() => {
-        BROKEN = {
-          ...BROKEN,
-          [chainId]: {
-            ...BROKEN?.[chainId],
-            [tokenAddress]: true,
-          },
-        }
-        setDummy((dummy) => dummy + 1)
-      })
+    if (data) {
+      addToken(data)
     }
-  }, [chainId, tokenAddress, existingToken, addTokenByAddress])
+  }, [data, addToken])
 
-  return BROKEN[chainId]?.[tokenAddress] ? null : existingToken
+  return token
 }

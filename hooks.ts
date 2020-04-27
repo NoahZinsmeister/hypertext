@@ -103,6 +103,20 @@ export function useEagerConnect(): boolean {
   return tried
 }
 
+const chainMappings = {
+  '1': 1,
+  mainnet: 1,
+  '3': 3,
+  ropsten: 3,
+  '4': 4,
+  rinkeby: 4,
+  '5': 5,
+  görli: 5,
+  goerli: 5,
+  '42': 42,
+  kovan: 42,
+}
+
 export function useQueryParameters(): {
   [QueryParameters.CHAIN]: number | undefined
   [QueryParameters.INPUT]: string | undefined
@@ -110,9 +124,11 @@ export function useQueryParameters(): {
 } {
   const { query } = useRouter()
 
-  const chainId = injected.supportedChainIds.includes(Number(query[QueryParameters.CHAIN]))
-    ? Number(query[QueryParameters.CHAIN])
-    : undefined
+  let candidateChainId: number
+  try {
+    candidateChainId = chainMappings[query[QueryParameters.CHAIN] as string]
+  } catch {}
+  const chainId = injected.supportedChainIds.includes(candidateChainId) ? candidateChainId : undefined
 
   let input: string
   try {

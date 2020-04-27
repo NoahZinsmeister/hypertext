@@ -163,17 +163,16 @@ export default function Buy(): JSX.Element {
     try {
       const valueParsed = parseUnits(value, tokens[independentField].decimals).toString()
       if (valueParsed !== '0') parsed[independentField] = new TokenAmount(tokens[independentField], valueParsed)
-    } catch (error) {
+    } catch {
       // should only fail if the user specifies too many decimal places of precision (or maybe exceed max uint?)
-      console.error(error)
     }
   }
 
   let trade: Trade
   try {
     trade = !!route && !!parsed[independentField] ? new Trade(route, parsed[independentField], tradeType) : undefined
-  } catch (error) {
-    console.error(error)
+  } catch {
+    // can fail if e.g. the user wants too much output
   }
 
   if (trade) {
@@ -395,6 +394,7 @@ export default function Buy(): JSX.Element {
 
         <Box ml="0.5rem">
           <TokenSelect
+            initialValue={tokenAddresses[Field.OUTPUT].address}
             isInvalid={isInvalidRoute}
             isDisabled={buying}
             selectedToken={tokens[Field.OUTPUT]}
@@ -456,6 +456,7 @@ export default function Buy(): JSX.Element {
 
         <Box ml="0.5rem">
           <TokenSelect
+            initialValue={tokenAddresses[Field.INPUT].address}
             isInvalid={isInvalidRoute}
             isDisabled={buying}
             selectedToken={tokens[Field.INPUT]}
