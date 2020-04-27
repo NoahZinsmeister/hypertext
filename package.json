@@ -4,7 +4,8 @@
   "license": "GPL-3.0-or-later",
   "scripts": {
     "dev": "next dev",
-    "build": "next build && next export"
+    "build": "next build && next export",
+    "prettier": "prettier --check \"**/*.{js,jsx,ts,tsx}\""
   },
   "dependencies": {
     "@chakra-ui/core": "^0.6.1",
