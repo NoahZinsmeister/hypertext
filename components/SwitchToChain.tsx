@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import { CHAIN_ID_NAMES } from '../utils'
 
 export default function SwitchToChain({ requiredChainId }: { requiredChainId: number }): JSX.Element {
-  const { pathname, replace } = useRouter()
+  const { pathname, push } = useRouter()
 
   return (
     <Flex flexGrow={1} alignItems="center" justifyContent="center">
@@ -17,7 +17,7 @@ export default function SwitchToChain({ requiredChainId }: { requiredChainId: nu
         <Button
           width="min-content"
           onClick={(): void => {
-            replace({ pathname }, undefined, { shallow: true })
+            push(pathname, undefined, { shallow: true })
           }}
         >
           Here by mistake?

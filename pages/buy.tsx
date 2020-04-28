@@ -215,9 +215,9 @@ export default function Buy(): JSX.Element {
   // clear url params
   useEffect(() => {
     if (Object.keys(query).length > 0) {
-      replace({ pathname, query: {} }, undefined, { shallow: true })
+      replace(pathname, undefined, { shallow: true })
     }
-  }, [query, pathname, replace])
+  })
 
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
   const danger = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 10
