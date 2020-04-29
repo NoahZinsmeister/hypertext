@@ -14,7 +14,7 @@ import TokenBalance from './TokenBalance'
 const Settings = dynamic(() => import('./Settings'))
 
 export default function Layout({ children }: { children: ReactNode }): JSX.Element {
-  const { chainId } = useWeb3React()
+  const { chainId, account } = useWeb3React()
   const isTestnet = typeof chainId === 'number' && chainId !== 1
 
   const { isOpen: isOpenSettings, onOpen: onOpenSettings, onClose: onCloseSettings } = useDisclosure()
@@ -42,18 +42,20 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
           <Account />
         </Flex>
 
-        <Stack
-          position="absolute"
-          top={0}
-          right={0}
-          m={isTestnet ? '1.5rem' : '1rem'}
-          mt={isTestnet ? '5rem' : '4.5rem'}
-          alignItems="flex-end"
-          spacing="1rem"
-        >
-          <TokenBalance token={firstToken} />
-          <TokenBalance token={secondToken} />
-        </Stack>
+        {typeof account === 'string' && (
+          <Stack
+            position="absolute"
+            top={0}
+            right={0}
+            m={isTestnet ? '1.5rem' : '1rem'}
+            mt={isTestnet ? '5rem' : '4.5rem'}
+            alignItems="flex-end"
+            spacing="1rem"
+          >
+            <TokenBalance token={firstToken} />
+            <TokenBalance token={secondToken} />
+          </Stack>
+        )}
 
         <Flex flexGrow={1} direction="column" overflowY="auto">
           {children}
