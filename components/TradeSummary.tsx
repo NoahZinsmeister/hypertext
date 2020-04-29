@@ -93,21 +93,17 @@ export default function TradeSummary({
                 ? trade.executionPrice.invert().toSignificant(4, { groupSeparator: ',' })
                 : trade.executionPrice.toSignificant(4, { groupSeparator: ',' })}
             </StatNumber>
-            <StatHelpText w="max-content" m={0} opacity={warning ? 1 : 0.8}>
-              <StatArrow
-                type={invert ? 'increase' : 'decrease'}
-                {...(warning && {
-                  size: '1.125rem',
-                  name: !danger ? 'warning-2' : 'not-allowed',
-                  color: colorMode === 'light' ? 'yellow.500' : 'yellow.200',
-                })}
-              />
-              {getPercentChange(
-                invert ? trade.route.midPrice.invert() : trade.route.midPrice,
-                invert ? trade.executionPrice.invert() : trade.executionPrice,
-                invert
-              ).toSignificant(3, { groupSeparator: ',' })}
-              %
+            <StatHelpText w="max-content" m={0} opacity={1}>
+              {warning && (
+                <StatArrow
+                  {...{
+                    size: '1.125rem',
+                    name: !danger ? 'warning-2' : 'not-allowed',
+                    color: colorMode === 'light' ? 'yellow.500' : 'yellow.200',
+                  }}
+                />
+              )}
+              {trade.slippage.toSignificant(3, { groupSeparator: ',' })}% slippage
             </StatHelpText>
           </Stat>
 

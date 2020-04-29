@@ -28,7 +28,7 @@
     "react": "^16.13.1",
     "react-copy-to-clipboard": "^5.0.2",
     "react-dom": "^16.13.1",
-    "swr": "^0.2.0"
+    "swr": "0.1.18"
   },
   "devDependencies": {
     "@types/node": "^13.9.3",

@@ -120,7 +120,7 @@ export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<P
   const contract = useContract(pairAddress, PAIR)
   const shouldFetch = !!contract
   return useSWR(
-    shouldFetch ? [DataType.Reserves, tokenA.chainId, pairAddress] : null,
+    shouldFetch ? [DataType.Reserves, token0.chainId, pairAddress] : null,
     getReserves(contract, token0, token1),
     {
       refreshInterval: 30 * 1000,

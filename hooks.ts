@@ -151,7 +151,7 @@ export function useQueryParameters(): {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function useDirectPair(inputToken: Token, outputToken: Token) {
+function useDirectPair(inputToken?: Token, outputToken?: Token) {
   const { data: pair } = useReserves(inputToken, outputToken)
   return pair
 }
@@ -169,7 +169,7 @@ function useETHPairs(inputToken: Token, outputToken: Token) {
   return [inputPair, outputPair]
 }
 
-export function useRoute(inputToken: Token, outputToken: Token): undefined | Route | null {
+export function useRoute(inputToken?: Token, outputToken?: Token): undefined | Route | null {
   const directPair = useDirectPair(inputToken, outputToken)
   const [inputPair, outputPair] = useETHPairs(
     directPair === null ? inputToken : undefined,
@@ -184,7 +184,7 @@ export function useRoute(inputToken: Token, outputToken: Token): undefined | Rou
     } else {
       return directPair === null && (inputPair === null || outputPair === null) ? null : undefined
     }
-  }, [directPair, inputPair, outputPair, inputToken])
+  }, [directPair, inputToken, inputPair, outputPair])
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
