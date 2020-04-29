@@ -15,7 +15,6 @@ import {
   useColorMode,
   Button,
   Link,
-  useTheme,
   Switch,
 } from '@chakra-ui/core'
 
@@ -25,7 +24,6 @@ import { useApproveMax, useDeadline, useSlippage } from '../context'
 
 export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }): JSX.Element {
   const { colorMode, toggleColorMode } = useColorMode()
-  const { fonts } = useTheme()
 
   useBodyKeyDown('d', toggleColorMode)
 
@@ -108,7 +106,6 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
             target="_blank"
             rel="noopener noreferrer"
             color="blue.500"
-            fontFamily={fonts.mono}
           >
             {process.env.COMMIT_SHA.slice(0, 7)}
           </Link>

@@ -187,7 +187,7 @@ export default function TokenSelect({
   selectedToken?: Token
   onAddressSelect: (address: string) => void
 }): JSX.Element {
-  const { fonts, colors } = useTheme()
+  const { colors } = useTheme()
   const { colorMode } = useColorMode()
 
   const [tokens, { removeToken }] = useAllTokens()
@@ -310,7 +310,6 @@ export default function TokenSelect({
               placeholder="Select…"
               px="0.5rem"
               textAlign="center"
-              fontFamily={fonts.mono}
               fontSize="1.875rem"
               {...(!!swatch?.hex && { color: swatch.hex })}
               isInvalid={isInvalid}

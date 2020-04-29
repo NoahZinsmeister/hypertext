@@ -1,5 +1,5 @@
 import { memo, useRef, useLayoutEffect, ChangeEvent } from 'react'
-import { Input, useTheme } from '@chakra-ui/core'
+import { Input } from '@chakra-ui/core'
 
 import { escapeRegExp } from '../utils'
 
@@ -16,8 +16,6 @@ export default memo(function AmountInput({
   value: string
   onChange: (value: string) => void
 }) {
-  const { fonts } = useTheme()
-
   const ref = useRef<HTMLInputElement>()
   useLayoutEffect(() => {
     if (ref.current) ref.current.size = Math.max(1, value.length)
@@ -44,7 +42,6 @@ export default memo(function AmountInput({
       isRequired={true}
       variant="flushed"
       fontSize="3xl"
-      fontFamily={fonts.mono}
       textAlign="center"
       // universal input options
       inputMode="decimal"
