@@ -50,14 +50,15 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
             m={isTestnet ? '1.5rem' : '1rem'}
             mt={isTestnet ? '5rem' : '4.5rem'}
             alignItems="flex-end"
-            spacing="1rem"
+            spacing={0}
+            zIndex={2}
           >
             <TokenBalance token={firstToken} />
             <TokenBalance token={secondToken} />
           </Stack>
         )}
 
-        <Flex flexGrow={1} direction="column" overflowY="auto">
+        <Flex flexGrow={1} direction="column" overflow="auto">
           {children}
         </Flex>
 
@@ -84,6 +85,7 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
             m={isTestnet ? '1.5rem' : '1rem'}
             alignItems="flex-end"
             spacing={0}
+            zIndex={2}
           >
             {transactions
               .filter((transaction) => transaction.chainId === chainId)

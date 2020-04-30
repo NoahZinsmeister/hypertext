@@ -13,6 +13,7 @@ import {
   Spinner,
   Flex,
   Icon,
+  Box,
 } from '@chakra-ui/core'
 import {
   Combobox,
@@ -321,59 +322,65 @@ export default function TokenSelect({
             />
           )}
         </TokenLogoColor>
-        <ComboboxPopover>
-          {value === '' && (
-            <Text mx="1rem" my="0.5rem" textAlign="center" color="gray.500">
-              Paste token address or search
-            </Text>
-          )}
-          <ComboboxList as={List}>
-            {filteredTokens.map((token) => {
-              const userAdded = !DEFAULT_TOKENS.some((defaultToken) => defaultToken.equals(token))
-              return (
-                <ComboboxOption as={ListItem} key={token.address} value={getTokenDisplayValue(token)}>
-                  <Stack direction="row" align="center" p="0.5rem">
-                    <TokenLogo token={token} size="1.5rem" />
 
-                    <Stack direction="column" ml="1rem" spacing={0} display="block">
-                      <ComboboxOptionText />
-                      <Text fontSize="1rem">{WETH[token.chainId].equals(token) ? 'Ethereum' : token.name}</Text>
-                    </Stack>
+        <Box maxHeight={0} position="relative" zIndex={2}>
+          <Box position="absolute">
+            <ComboboxPopover portal={false}>
+              {value === '' && (
+                <Text mx="1rem" my="0.5rem" textAlign="center" color="gray.500">
+                  Paste token address or search
+                </Text>
+              )}
+              <ComboboxList as={List}>
+                {filteredTokens.map((token) => {
+                  const userAdded = !DEFAULT_TOKENS.some((defaultToken) => defaultToken.equals(token))
+                  return (
+                    <ComboboxOption as={ListItem} key={token.address} value={getTokenDisplayValue(token)}>
+                      <Stack direction="row" align="center" p="0.5rem">
+                        <TokenLogo token={token} size="1.5rem" />
 
-                    {userAdded && (
-                      <Flex flexGrow={1} mb="auto" justifyContent="flex-end">
-                        <IconButton
-                          isDisabled={
-                            (!!firstToken && firstToken.equals(token)) || (!!secondToken && secondToken.equals(token))
-                          }
-                          icon="close"
-                          variant="ghost"
-                          size="sm"
-                          aria-label="Remove"
-                          onClick={(event): void => {
-                            event.preventDefault()
-                            removeToken(token)
-                          }}
-                        />
-                      </Flex>
-                    )}
-                  </Stack>
-                </ComboboxOption>
-              )
-            })}
-          </ComboboxList>
+                        <Stack direction="column" ml="1rem" spacing={0} display="block">
+                          <ComboboxOptionText />
+                          <Text fontSize="1rem">{WETH[token.chainId].equals(token) ? 'Ethereum' : token.name}</Text>
+                        </Stack>
 
-          {typeof valueAsAddress === 'string' && !tokens.some((token) => token.address === valueAsAddress) ? (
-            <PastedToken address={valueAsAddress} />
-          ) : null}
+                        {userAdded && (
+                          <Flex flexGrow={1} mb="auto" justifyContent="flex-end">
+                            <IconButton
+                              isDisabled={
+                                (!!firstToken && firstToken.equals(token)) ||
+                                (!!secondToken && secondToken.equals(token))
+                              }
+                              icon="close"
+                              variant="ghost"
+                              size="sm"
+                              aria-label="Remove"
+                              onClick={(event): void => {
+                                event.preventDefault()
+                                removeToken(token)
+                              }}
+                            />
+                          </Flex>
+                        )}
+                      </Stack>
+                    </ComboboxOption>
+                  )
+                })}
+              </ComboboxList>
 
-          {value.length >= 2 && valueAsAddress === null && !selectedToken ? <RemoteTokens query={value} /> : null}
-        </ComboboxPopover>
+              {typeof valueAsAddress === 'string' && !tokens.some((token) => token.address === valueAsAddress) ? (
+                <PastedToken address={valueAsAddress} />
+              ) : null}
+
+              {value.length >= 2 && valueAsAddress === null && !selectedToken ? <RemoteTokens query={value} /> : null}
+            </ComboboxPopover>
+          </Box>
+        </Box>
       </Combobox>
 
       <style jsx>{`
         :global([data-reach-combobox-popover]) {
-          min-width: max-content !important;
+          width: max-content !important;
           max-height: 20rem;
           overflow-y: auto;
           background: ${colorMode === 'light' ? colors.gray[50] : colors.gray[900]};
