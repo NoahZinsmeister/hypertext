@@ -1,14 +1,16 @@
 import { Suspense } from 'react'
-import { Button, Text, IconButton, Box } from '@chakra-ui/core'
+import { Button, Text, IconButton, Box, useColorMode } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
 import { Token, WETH } from '@uniswap/sdk'
 
 import { formatEtherscanLink, EtherscanType } from '../utils'
+import { BG } from '../constants'
 import { useTokenBalance } from '../data'
 import TokenLogo from './TokenLogo'
 import ErrorBoundary from './ErrorBoundary'
 
 function Balance({ token }: { token: Token }): JSX.Element {
+  const { colorMode } = useColorMode()
   const { account } = useWeb3React()
   const { data } = useTokenBalance(token, account, true)
 
@@ -17,6 +19,7 @@ function Balance({ token }: { token: Token }): JSX.Element {
       as="a"
       rightIcon="external-link"
       variant="outline"
+      backgroundColor={BG[colorMode]}
       {...{
         href: formatEtherscanLink(EtherscanType.TokenBalance, [token, account]),
         target: '_blank',
@@ -30,12 +33,14 @@ function Balance({ token }: { token: Token }): JSX.Element {
 }
 
 export default function TokenBalance({ token }: { token: Token }): JSX.Element {
+  const { colorMode } = useColorMode()
   return !token || token.equals(WETH[token.chainId]) ? null : (
     <Box mb="1rem">
       <ErrorBoundary
         fallback={
           <IconButton
             variant="outline"
+            backgroundColor={BG[colorMode]}
             icon="warning"
             aria-label="Failed"
             isDisabled
@@ -47,7 +52,14 @@ export default function TokenBalance({ token }: { token: Token }): JSX.Element {
       >
         <Suspense
           fallback={
-            <Button variant="outline" isLoading cursor="default !important" _hover={{}} _active={{}}>
+            <Button
+              variant="outline"
+              backgroundColor={BG[colorMode]}
+              isLoading
+              cursor="default !important"
+              _hover={{}}
+              _active={{}}
+            >
               {null}
             </Button>
           }
