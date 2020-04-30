@@ -195,7 +195,7 @@ export default function TokenSelect({
   const [firstToken] = useFirstToken()
   const [secondToken] = useSecondToken()
 
-  const [value, setValue] = useState(initialValue || '')
+  const [value, setValue] = useState(selectedToken ? getTokenDisplayValue(selectedToken) : initialValue || '')
   let valueAsAddress: string | null
   try {
     valueAsAddress = getAddress(value)
