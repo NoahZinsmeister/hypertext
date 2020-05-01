@@ -12,7 +12,7 @@ export default function Base(): JSX.Element {
                 window.location.origin, // e.g. https://ipfs.io"
                 window.location.pathname.split('/').slice(0, 3).join('/') + '/' // e.g. /ipfs/.../
               )
-            : document.baseURI
+            : window.location.origin
         }
       />
     </Head>
