@@ -1,24 +1,22 @@
-import { memo, useRef, useLayoutEffect, ChangeEvent } from 'react'
+import { useLayoutEffect, ChangeEvent, forwardRef } from 'react'
 import { Input } from '@chakra-ui/core'
 
 import { escapeRegExp } from '../utils'
 
 const REGEX = RegExp(`^\\d*(?:\\\\.)?\\d*$`) // match escaped "." characters via in a non-capturing group
 
-export default memo(function AmountInput({
-  isInvalid,
-  isDisabled,
-  value,
-  onChange,
-}: {
-  isInvalid: boolean
-  isDisabled: boolean
-  value: string
-  onChange: (value: string) => void
-}) {
-  const ref = useRef<HTMLInputElement>()
+const AmountInput = forwardRef<
+  HTMLInputElement,
+  {
+    isInvalid: boolean
+    isDisabled: boolean
+    value: string
+    onChange: (value: string) => void
+  }
+>(({ isInvalid, isDisabled, value, onChange }, ref) => {
   useLayoutEffect(() => {
-    if (ref.current) ref.current.size = Math.max(1, value.length)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((ref as any)?.current) (ref as any).current.size = Math.max(1, value.length)
   })
 
   return (
@@ -57,3 +55,5 @@ export default memo(function AmountInput({
     />
   )
 })
+
+export default AmountInput
