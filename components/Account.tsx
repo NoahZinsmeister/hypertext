@@ -92,7 +92,7 @@ export default function Account(): JSX.Element {
   }
 
   return (
-    <Stack direction="row" spacing={0} whiteSpace="nowrap" m={0}>
+    <Stack direction="row" spacing={0} whiteSpace="nowrap" m={0} shouldWrapChildren>
       <ErrorBoundary
         fallback={
           <IconButton

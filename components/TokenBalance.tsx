@@ -35,38 +35,36 @@ function Balance({ token }: { token: Token }): JSX.Element {
 export default function TokenBalance({ token }: { token: Token }): JSX.Element {
   const { colorMode } = useColorMode()
   return !token || token.equals(WETH[token.chainId]) ? null : (
-    <Box mb="1rem">
-      <ErrorBoundary
+    <ErrorBoundary
+      fallback={
+        <IconButton
+          variant="outline"
+          backgroundColor={BG[colorMode]}
+          icon="warning"
+          aria-label="Failed"
+          isDisabled
+          cursor="default !important"
+          _hover={{}}
+          _active={{}}
+        />
+      }
+    >
+      <Suspense
         fallback={
-          <IconButton
+          <Button
             variant="outline"
             backgroundColor={BG[colorMode]}
-            icon="warning"
-            aria-label="Failed"
-            isDisabled
+            isLoading
             cursor="default !important"
             _hover={{}}
             _active={{}}
-          />
+          >
+            {null}
+          </Button>
         }
       >
-        <Suspense
-          fallback={
-            <Button
-              variant="outline"
-              backgroundColor={BG[colorMode]}
-              isLoading
-              cursor="default !important"
-              _hover={{}}
-              _active={{}}
-            >
-              {null}
-            </Button>
-          }
-        >
-          <Balance token={token} />
-        </Suspense>
-      </ErrorBoundary>
-    </Box>
+        <Balance token={token} />
+      </Suspense>
+    </ErrorBoundary>
   )
 }

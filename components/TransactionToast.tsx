@@ -28,7 +28,7 @@ export function TransactionToast({ hash }: { hash: string }): JSX.Element {
   }, [library, hash])
 
   return (
-    <ButtonGroup spacing={0} mt="1rem">
+    <ButtonGroup spacing={0}>
       <Button
         as="a"
         variantColor={typeof confirmed === 'boolean' ? (confirmed ? 'green' : 'red') : 'blue'}

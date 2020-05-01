@@ -73,10 +73,10 @@ function PastedTokenData({ address }: { address: string }): JSX.Element {
 
       <ComboboxList as={List}>
         <ComboboxOption as={ListItem} key={data.address} value={data.address}>
-          <Stack direction="row" align="center" p="0.5rem">
+          <Stack direction="row" align="center" p="0.5rem" shouldWrapChildren>
             <TokenLogo token={data} size="1.5rem" />
 
-            <Stack direction="column" ml="1rem" spacing={0} display="block">
+            <Stack direction="column" ml="1rem" spacing={0}>
               <Text>{data.symbol}</Text>
               <Text fontSize="1rem">{data.name}</Text>
             </Stack>
@@ -160,10 +160,10 @@ function RemoteTokensData({ query }: { query: string }): JSX.Element {
         const DUMMY = new Token(chainId, token.address, 18) // we don't know if it actually has 18 decimals
         return (
           <ComboboxOption as={ListItem} key={token.address} value={token.address}>
-            <Stack direction="row" align="center" p="0.5rem">
+            <Stack direction="row" align="center" p="0.5rem" shouldWrapChildren>
               <TokenLogo token={DUMMY} size="1.5rem" />
 
-              <Stack direction="column" ml="1rem" spacing={0} display="block">
+              <Stack direction="column" ml="1rem" spacing={0}>
                 <Text>{token.symbol}</Text>
                 <Text fontSize="1rem">{token.name}</Text>
               </Stack>
@@ -309,7 +309,6 @@ export default function TokenSelect({
               // chakra props
               variant="flushed"
               placeholder="Select…"
-              px="0.5rem"
               textAlign="center"
               fontSize="1.875rem"
               {...(!!swatch?.hex && { color: swatch.hex })}
@@ -337,9 +336,11 @@ export default function TokenSelect({
                   return (
                     <ComboboxOption as={ListItem} key={token.address} value={getTokenDisplayValue(token)}>
                       <Stack direction="row" align="center" p="0.5rem">
-                        <TokenLogo token={token} size="1.5rem" />
+                        <Box>
+                          <TokenLogo token={token} size="1.5rem" />
+                        </Box>
 
-                        <Stack direction="column" ml="1rem" spacing={0} display="block">
+                        <Stack direction="column" ml="1rem" spacing={0} shouldWrapChildren>
                           <ComboboxOptionText />
                           <Text fontSize="1rem">{WETH[token.chainId].equals(token) ? 'Ethereum' : token.name}</Text>
                         </Stack>

@@ -44,13 +44,14 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
 
         {typeof account === 'string' && (
           <Stack
+            shouldWrapChildren
             position="absolute"
             top={0}
             right={0}
             m={isTestnet ? '1.5rem' : '1rem'}
             mt={isTestnet ? '5rem' : '4.5rem'}
             alignItems="flex-end"
-            spacing={0}
+            spacing="1rem"
             zIndex={2}
           >
             <TokenBalance token={firstToken} />
@@ -79,12 +80,13 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
 
         {transactions.length > 0 && (
           <Stack
+            shouldWrapChildren
             position="absolute"
             bottom={0}
             right={0}
             m={isTestnet ? '1.5rem' : '1rem'}
             alignItems="flex-end"
-            spacing={0}
+            spacing="1rem"
             zIndex={2}
           >
             {transactions

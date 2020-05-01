@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { TradeType, TokenAmount, Trade, JSBI, WETH } from '@uniswap/sdk'
-import { Stack, Button, Box, Text } from '@chakra-ui/core'
+import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
 
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
@@ -103,6 +103,14 @@ function reducer(
       return initializeSentenceState({ independentField: field })
     }
   }
+}
+
+function SwapText({ children, ...rest }: BoxProps): JSX.Element {
+  return (
+    <Text fontSize="3xl" lineHeight={1} pt="0.3rem" userSelect="none" {...rest}>
+      {children}
+    </Text>
+  )
 }
 
 export default function Swap({ buy }: { buy: boolean }): JSX.Element {
@@ -357,145 +365,154 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   }
 
   return (
-    <Stack direction="column" align="center" spacing="6rem" flexGrow={1} justifyContent="center" px="2.5rem" py="8rem">
-      <Stack direction="row" align="flex-start" spacing={0} flexWrap="wrap">
-        <Text fontSize="3xl" lineHeight={1} pt="0.3rem">
-          I want to
-        </Text>
+    <Stack
+      direction="column"
+      align="center"
+      spacing="6rem"
+      flexGrow={1}
+      justifyContent="center"
+      px="2.5rem"
+      py="8rem"
+      shouldWrapChildren
+    >
+      <Stack direction="row" align="flex-start" spacing="1rem" flexWrap="wrap" shouldWrapChildren>
+        <SwapText>I want to</SwapText>
 
-        <Box ml="0.8rem">
-          {!!!trade ? (
-            <Link
-              href={{
-                pathname: buy ? '/sell' : '/buy',
-                query: {
-                  ...(tokens[Field.INPUT]?.address ? { [QueryParameters.INPUT]: tokens[Field.INPUT]?.address } : {}),
-                  ...(tokens[Field.OUTPUT]?.address ? { [QueryParameters.OUTPUT]: tokens[Field.OUTPUT]?.address } : {}),
-                },
-              }}
-              passHref
-            >
-              <Button as="a" variant="ghost" variantColor={buy ? 'green' : 'red'}>
-                <Text fontSize="3xl">{buy ? 'Buy' : 'Sell'}</Text>
-              </Button>
-            </Link>
-          ) : (
+        {!!!trade ? (
+          <Link
+            href={{
+              pathname: buy ? '/sell' : '/buy',
+              query: {
+                ...(tokens[Field.INPUT]?.address ? { [QueryParameters.INPUT]: tokens[Field.INPUT]?.address } : {}),
+                ...(tokens[Field.OUTPUT]?.address ? { [QueryParameters.OUTPUT]: tokens[Field.OUTPUT]?.address } : {}),
+              },
+            }}
+            passHref
+          >
             <Button
-              variant={'solid'}
-              variantColor={!warning ? (buy ? 'green' : 'red') : 'yellow'}
-              isDisabled={isInvalidBalance || isInvalidTrade}
-              isLoading={swapping}
-              leftIcon={!warning ? undefined : !danger ? 'warning-2' : 'not-allowed'}
-              cursor={warning ? 'not-allowed' : 'pointer'}
-              size="lg"
-              mt="-0.25rem"
-              onClick={swap}
+              as="a"
+              variant="ghost"
+              variantColor={buy ? 'green' : 'red'}
+              p="0.5rem"
+              mt="-0.2rem"
+              fontSize="3xl"
+              lineHeight={1}
+              height="min-content"
             >
-              <Text fontSize="3xl">{buy ? 'Buy' : 'Sell'}</Text>
+              {buy ? 'Buy' : 'Sell'}
             </Button>
-          )}
-        </Box>
+          </Link>
+        ) : (
+          <Button
+            variant="solid"
+            variantColor={!warning ? (buy ? 'green' : 'red') : 'yellow'}
+            p="0.75rem"
+            mt="-0.45rem"
+            fontSize="3xl"
+            lineHeight={1}
+            height="min-content"
+            leftIcon={!warning ? undefined : !danger ? 'warning-2' : 'not-allowed'}
+            isDisabled={isInvalidBalance || isInvalidTrade}
+            isLoading={swapping}
+            cursor={warning ? 'not-allowed' : 'pointer'}
+            onClick={swap}
+          >
+            {buy ? 'Buy' : 'Sell'}
+          </Button>
+        )}
 
         {trade && independentField === (buy ? Field.INPUT : Field.OUTPUT) ? (
-          <Text fontSize="3xl" ml="0.8rem" lineHeight={1} pt="0.3rem">
-            {buy ? 'at least' : 'at most'}
-          </Text>
+          <SwapText>{buy ? 'at least' : 'at most'}</SwapText>
         ) : null}
 
-        <Stack ml="0.5rem" direction="row" alignItems="center">
-          <AmountInput
-            isDisabled={isInvalidRoute || swapping}
-            isInvalid={isInvalidTrade}
-            value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
-            onChange={(value): void => {
+        <AmountInput
+          isDisabled={isInvalidRoute || swapping}
+          isInvalid={isInvalidTrade}
+          value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
+          onChange={(value): void => {
+            dispatch({
+              type: ActionType.TYPE,
+              payload: { field: buy ? Field.OUTPUT : Field.INPUT, value },
+            })
+          }}
+        />
+
+        {!buy && canMax ? (
+          <Button
+            size="sm"
+            mt="0.3rem"
+            onClick={(): void => {
               dispatch({
                 type: ActionType.TYPE,
-                payload: { field: buy ? Field.OUTPUT : Field.INPUT, value },
+                payload: { field: Field.INPUT, value: balance.toExact() },
               })
             }}
-          />
+          >
+            Max
+          </Button>
+        ) : null}
 
-          {!buy && canMax ? (
-            <Button
-              size="sm"
-              onClick={(): void => {
-                dispatch({
-                  type: ActionType.TYPE,
-                  payload: { field: Field.INPUT, value: balance.toExact() },
-                })
-              }}
-            >
-              Max
-            </Button>
-          ) : null}
-        </Stack>
+        <TokenSelect
+          initialValue={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
+          isInvalid={isInvalidRoute}
+          isDisabled={swapping}
+          selectedToken={tokens[buy ? Field.OUTPUT : Field.INPUT]}
+          onAddressSelect={(address): void => {
+            dispatch({
+              type: ActionType.SELECT_TOKEN,
+              payload: { field: buy ? Field.OUTPUT : Field.INPUT, address },
+            })
+          }}
+        />
 
-        <Box ml="0.5rem">
-          <TokenSelect
-            initialValue={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
-            isInvalid={isInvalidRoute}
-            isDisabled={swapping}
-            selectedToken={tokens[buy ? Field.OUTPUT : Field.INPUT]}
-            onAddressSelect={(address): void => {
-              dispatch({
-                type: ActionType.SELECT_TOKEN,
-                payload: { field: buy ? Field.OUTPUT : Field.INPUT, address },
-              })
-            }}
-          />
-        </Box>
+        <SwapText>
+          {buy ? 'with' : 'for'}
+          {trade && independentField === (buy ? Field.OUTPUT : Field.INPUT) ? (buy ? ' at most' : ' at least') : ''}
+        </SwapText>
 
-        <Text fontSize="3xl" ml="0.75rem" lineHeight={1} pt="0.3rem">
-          {buy ? 'with' : 'for'}{' '}
-          {trade && independentField === (buy ? Field.OUTPUT : Field.INPUT) ? (buy ? 'at most' : 'at least') : ''}
-        </Text>
+        <AmountInput
+          isDisabled={isInvalidRoute || swapping}
+          isInvalid={isInvalidBalance}
+          value={formatted[buy ? Field.INPUT : Field.OUTPUT]}
+          onChange={(value): void => {
+            dispatch({
+              type: ActionType.TYPE,
+              payload: { field: buy ? Field.INPUT : Field.OUTPUT, value },
+            })
+          }}
+        />
 
-        <Stack ml="0.5rem" direction="row" alignItems="center">
-          <AmountInput
-            isDisabled={isInvalidRoute || swapping}
-            isInvalid={isInvalidBalance}
-            value={formatted[buy ? Field.INPUT : Field.OUTPUT]}
-            onChange={(value): void => {
+        {buy && canMax ? (
+          <Button
+            size="sm"
+            mt="0.3rem"
+            onClick={(): void => {
               dispatch({
                 type: ActionType.TYPE,
-                payload: { field: buy ? Field.INPUT : Field.OUTPUT, value },
+                payload: { field: Field.INPUT, value: balance.toExact() },
               })
             }}
-          />
+          >
+            Max
+          </Button>
+        ) : null}
 
-          {buy && canMax ? (
-            <Button
-              size="sm"
-              onClick={(): void => {
-                dispatch({
-                  type: ActionType.TYPE,
-                  payload: { field: Field.INPUT, value: balance.toExact() },
-                })
-              }}
-            >
-              Max
-            </Button>
-          ) : null}
-        </Stack>
+        <TokenSelect
+          initialValue={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
+          isInvalid={isInvalidRoute}
+          isDisabled={swapping}
+          selectedToken={tokens[buy ? Field.INPUT : Field.OUTPUT]}
+          onAddressSelect={(address): void => {
+            dispatch({
+              type: ActionType.SELECT_TOKEN,
+              payload: { field: buy ? Field.INPUT : Field.OUTPUT, address },
+            })
+          }}
+        />
 
-        <Box ml="0.5rem">
-          <TokenSelect
-            initialValue={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
-            isInvalid={isInvalidRoute}
-            isDisabled={swapping}
-            selectedToken={tokens[buy ? Field.INPUT : Field.OUTPUT]}
-            onAddressSelect={(address): void => {
-              dispatch({
-                type: ActionType.SELECT_TOKEN,
-                payload: { field: buy ? Field.INPUT : Field.OUTPUT, address },
-              })
-            }}
-          />
-        </Box>
-
-        <Text fontSize="3xl" ml="0.25rem" lineHeight={1} pt="0.3rem">
+        <SwapText fontSize="3xl" lineHeight={1} pt="0.3rem">
           .
-        </Text>
+        </SwapText>
       </Stack>
 
       <TradeSummary route={route} trade={trade} warning={warning} danger={danger} />

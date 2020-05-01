@@ -97,7 +97,6 @@ export default function TradeSummary({
               {warning && (
                 <StatArrow
                   {...{
-                    size: '1.125rem',
                     name: !danger ? 'warning-2' : 'not-allowed',
                     color: colorMode === 'light' ? 'yellow.500' : 'yellow.200',
                   }}
