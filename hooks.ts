@@ -157,7 +157,7 @@ function useDirectPair(inputToken?: Token, outputToken?: Token) {
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function useETHPairs(inputToken: Token, outputToken: Token) {
+function useETHPairs(inputToken?: Token, outputToken?: Token) {
   const { data: inputPair } = useReserves(
     inputToken,
     inputToken?.equals(WETH[inputToken?.chainId]) ? undefined : WETH[inputToken?.chainId]

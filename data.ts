@@ -32,7 +32,8 @@ export function useETHBalance(address?: string, suspense = false): responseInter
   const { chainId, library } = useWeb3React()
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string' && !!library
   return useSWR(shouldFetch ? [DataType.ETHBalance, chainId, address] : null, getETHBalance(library), {
-    refreshInterval: 45 * 1000,
+    dedupingInterval: 15 * 1000,
+    refreshInterval: 30 * 1000,
     suspense,
   })
 }
@@ -59,7 +60,8 @@ export function useTokenBalance(
     shouldFetch ? [DataType.TokenBalance, token.chainId, token.address, address] : null,
     getTokenBalance(contract, token),
     {
-      refreshInterval: 45 * 1000,
+      dedupingInterval: 15 * 1000,
+      refreshInterval: 30 * 1000,
       suspense,
     }
   )
@@ -87,6 +89,7 @@ export function useTokenAllowance(
     shouldFetch ? [DataType.TokenAllowance, token.chainId, token.address, owner, spender] : null,
     getTokenAllowance(contract, token),
     {
+      dedupingInterval: 30 * 1000,
       refreshInterval: 60 * 1000,
     }
   )
@@ -123,6 +126,7 @@ export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<P
     shouldFetch ? [DataType.Reserves, token0.chainId, pairAddress] : null,
     getReserves(contract, token0, token1),
     {
+      dedupingInterval: 15 * 1000,
       refreshInterval: 30 * 1000,
     }
   )
@@ -160,7 +164,7 @@ export function useOnchainToken(address?: string, suspense = false): responseInt
   const contractBytes32 = useContract(address, ERC20_BYTES32)
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string'
   return useSWR(shouldFetch ? [DataType.Token, chainId, address] : null, getOnchainToken(contract, contractBytes32), {
-    dedupingInterval: 60 * 10 * 1000,
+    dedupingInterval: 60 * 1000,
     suspense,
   })
 }
@@ -220,7 +224,7 @@ export function useRemoteTokens(query = '', suspense = false): responseInterface
   const { chainId } = useWeb3React()
   const shouldFetch = (chainId === ChainId.RINKEBY || chainId === ChainId.MAINNET) && query.length > 0
   return useSWR(shouldFetch ? [DataType.RemoteTokens, chainId, query] : null, getRemoteTokens, {
-    dedupingInterval: 60 * 10 * 1000,
+    dedupingInterval: 60 * 5 * 1000,
     suspense,
   })
 }
