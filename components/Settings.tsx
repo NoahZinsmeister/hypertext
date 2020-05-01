@@ -155,10 +155,8 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
                 isDisabled={copied}
                 onClick={(): void => {
                   try {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    ;(window.navigator as any).share({ title: 'Hypertext', url: permalink }).catch(() => {
-                      copyWithFlag(permalink)
-                    })
+                    // eslint-disable-next-line
+                    ;(window.navigator as any).share({ title: 'Hypertext', url: permalink }).catch(() => {})
                   } catch {
                     copyWithFlag(permalink)
                   }
