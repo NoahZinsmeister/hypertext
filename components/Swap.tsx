@@ -240,13 +240,6 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   const _balance = useTokenBalance(tokens[Field.INPUT], account)
   const balance = tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId]) ? ETHBalance.data : _balance.data
 
-  // compute flag for whether maxing is allowed
-  const canMax =
-    !tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId]) &&
-    formatted[Field.INPUT]?.length === 0 &&
-    !!balance &&
-    JSBI.greaterThan(balance.raw, ZERO)
-
   // compute flags for warning states
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
   const danger = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 10
@@ -256,6 +249,14 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     parsed[Field.INPUT] && balance ? JSBI.greaterThan(parsed[Field.INPUT].raw, balance.raw) : false
   const isInvalidRoute = route === null
   const isInvalidTrade = route && parsed[independentField] ? !!!trade : false
+
+  // compute flag for whether maxing is allowed
+  const canMax =
+    !tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId]) &&
+    !isInvalidRoute &&
+    formatted[Field.INPUT]?.length === 0 &&
+    !!balance &&
+    JSBI.greaterThan(balance.raw, ZERO)
 
   // function to perform the swap
   const [swapping, setSwapping] = useState(false)

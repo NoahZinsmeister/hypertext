@@ -147,33 +147,34 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
             </Stack>
           </Stack>
         </ModalBody>
-        <ModalFooter justifyContent="center">
-          <Stack align="center">
-            {permalink === null ? null : (
-              <Button
-                variant="link"
-                isDisabled={copied}
-                onClick={(): void => {
-                  try {
-                    // eslint-disable-next-line
-                    ;(window.navigator as any).share({ title: 'Hypertext', url: permalink }).catch(() => {})
-                  } catch {
-                    copyWithFlag(permalink)
-                  }
-                }}
-              >
-                {copied ? 'Copied' : 'Share Permalink'}
-              </Button>
-            )}
-            <Link
-              href={`https://github.com/NoahZinsmeister/hypertext/tree/${process.env.COMMIT_SHA}`}
-              target="_blank"
-              rel="noopener noreferrer"
+        <ModalFooter justifyContent={permalink === null ? 'flex-end' : 'space-between'}>
+          {permalink !== null && (
+            <Button
+              variant="link"
+              isDisabled={copied}
               color="blue.500"
+              width="min-content"
+              onClick={(): void => {
+                try {
+                  // eslint-disable-next-line
+                  ;(window.navigator as any).share({ title: 'Hypertext', url: permalink }).catch(() => {})
+                } catch {
+                  copyWithFlag(permalink)
+                }
+              }}
             >
-              {process.env.COMMIT_SHA.slice(0, 7)}
-            </Link>
-          </Stack>
+              {copied ? 'Copied' : 'Share Permalink'}
+            </Button>
+          )}
+
+          <Link
+            href={`https://github.com/NoahZinsmeister/hypertext/tree/${process.env.COMMIT_SHA}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            color="blue.500"
+          >
+            {process.env.COMMIT_SHA.slice(0, 7)}
+          </Link>
         </ModalFooter>
       </ModalContent>
     </Modal>
