@@ -107,7 +107,7 @@ function reducer(
 
 function SwapText({ children, ...rest }: BoxProps): JSX.Element {
   return (
-    <Text fontSize="3xl" lineHeight={1} pt="0.3rem" userSelect="none" {...rest}>
+    <Text fontSize="3xl" lineHeight={1} py="0.3rem" userSelect="none" {...rest}>
       {children}
     </Text>
   )

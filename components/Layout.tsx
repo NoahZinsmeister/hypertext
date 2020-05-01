@@ -1,4 +1,5 @@
-import { Flex, IconButton, useDisclosure, Badge, LightMode, Stack } from '@chakra-ui/core'
+import { ReactNode } from 'react'
+import { Flex, IconButton, useDisclosure, Badge, LightMode, Stack, Box } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
 import dynamic from 'next/dynamic'
 
@@ -8,7 +9,6 @@ import { useTransactions, useFirstToken, useSecondToken } from '../context'
 import ColorBox from './ColorBox'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
-import { ReactNode } from 'react'
 import TokenBalance from './TokenBalance'
 
 const Settings = dynamic(() => import('./Settings'))
@@ -44,7 +44,6 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
 
         {typeof account === 'string' && (
           <Stack
-            shouldWrapChildren
             position="absolute"
             top={0}
             right={0}
@@ -54,8 +53,12 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
             spacing="1rem"
             zIndex={2}
           >
-            <TokenBalance token={firstToken} />
-            <TokenBalance token={secondToken} />
+            <Box>
+              <TokenBalance token={firstToken} />
+            </Box>
+            <Box>
+              <TokenBalance token={secondToken} />
+            </Box>
           </Stack>
         )}
 
@@ -80,7 +83,6 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
 
         {transactions.length > 0 && (
           <Stack
-            shouldWrapChildren
             position="absolute"
             bottom={0}
             right={0}
@@ -92,7 +94,9 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
             {transactions
               .filter((transaction) => transaction.chainId === chainId)
               .map(({ hash }) => (
-                <TransactionToast key={hash} hash={hash} />
+                <Box key={hash}>
+                  <TransactionToast hash={hash} />
+                </Box>
               ))}
           </Stack>
         )}
