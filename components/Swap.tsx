@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { TradeType, TokenAmount, Trade, JSBI, WETH } from '@uniswap/sdk'
-import { Stack, Button, Box, Text, Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/core'
+import { Stack, Button, Box, Text } from '@chakra-ui/core'
 
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
@@ -234,7 +234,10 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   // compute flag for whether maxing is allowed
   const canMax =
-    !!balance && !tokens[Field.INPUT].equals(WETH[tokens[Field.INPUT].chainId]) && JSBI.greaterThan(balance.raw, ZERO)
+    !tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId]) &&
+    formatted[Field.INPUT]?.length === 0 &&
+    !!balance &&
+    JSBI.greaterThan(balance.raw, ZERO)
 
   // compute flags for warning states
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
@@ -354,9 +357,11 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   }
 
   return (
-    <Stack direction="column" align="center" spacing="6rem" flexGrow={1} justifyContent="center" px="2rem" py="8rem">
-      <Stack direction="row" align="center" spacing={0} flexWrap="wrap">
-        <Text fontSize="3xl">I want to</Text>
+    <Stack direction="column" align="center" spacing="6rem" flexGrow={1} justifyContent="center" px="2.5rem" py="8rem">
+      <Stack direction="row" align="flex-start" spacing={0} flexWrap="wrap">
+        <Text fontSize="3xl" lineHeight={1} pt="0.3rem">
+          I want to
+        </Text>
 
         <Box ml="0.8rem">
           {!!!trade ? (
@@ -383,6 +388,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
               leftIcon={!warning ? undefined : !danger ? 'warning-2' : 'not-allowed'}
               cursor={warning ? 'not-allowed' : 'pointer'}
               size="lg"
+              mt="-0.25rem"
               onClick={swap}
             >
               <Text fontSize="3xl">{buy ? 'Buy' : 'Sell'}</Text>
@@ -391,47 +397,38 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         </Box>
 
         {trade && independentField === (buy ? Field.INPUT : Field.OUTPUT) ? (
-          <Text fontSize="3xl" textAlign="center" ml="0.8rem">
+          <Text fontSize="3xl" ml="0.8rem" lineHeight={1} pt="0.3rem">
             {buy ? 'at least' : 'at most'}
           </Text>
         ) : null}
 
-        <Box ml="0.5rem" mt={!buy && canMax && !!!parsed[Field.INPUT] ? '2rem' : 0}>
-          <Popover
-            trigger="hover"
-            placement="bottom"
-            isOpen={!buy && canMax && !!!parsed[Field.INPUT] ? true : false}
-            returnFocusOnClose={false}
-          >
-            <PopoverTrigger>
-              <AmountInput
-                isDisabled={isInvalidRoute || swapping}
-                isInvalid={isInvalidTrade}
-                value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
-                onChange={(value): void => {
-                  dispatch({
-                    type: ActionType.TYPE,
-                    payload: { field: buy ? Field.OUTPUT : Field.INPUT, value },
-                  })
-                }}
-              />
-            </PopoverTrigger>
+        <Stack ml="0.5rem" direction="row" alignItems="center">
+          <AmountInput
+            isDisabled={isInvalidRoute || swapping}
+            isInvalid={isInvalidTrade}
+            value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
+            onChange={(value): void => {
+              dispatch({
+                type: ActionType.TYPE,
+                payload: { field: buy ? Field.OUTPUT : Field.INPUT, value },
+              })
+            }}
+          />
 
-            <PopoverContent width="min-content" border="none" background="transparent" boxShadow="none">
-              <Button
-                size="sm"
-                onClick={(): void => {
-                  dispatch({
-                    type: ActionType.TYPE,
-                    payload: { field: Field.INPUT, value: balance.toExact() },
-                  })
-                }}
-              >
-                Max
-              </Button>
-            </PopoverContent>
-          </Popover>
-        </Box>
+          {!buy && canMax ? (
+            <Button
+              size="sm"
+              onClick={(): void => {
+                dispatch({
+                  type: ActionType.TYPE,
+                  payload: { field: Field.INPUT, value: balance.toExact() },
+                })
+              }}
+            >
+              Max
+            </Button>
+          ) : null}
+        </Stack>
 
         <Box ml="0.5rem">
           <TokenSelect
@@ -448,47 +445,38 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
           />
         </Box>
 
-        <Text fontSize="3xl" textAlign="center" ml="0.75rem">
+        <Text fontSize="3xl" ml="0.75rem" lineHeight={1} pt="0.3rem">
           {buy ? 'with' : 'for'}{' '}
           {trade && independentField === (buy ? Field.OUTPUT : Field.INPUT) ? (buy ? 'at most' : 'at least') : ''}
         </Text>
 
-        <Box ml="0.5rem" mt={buy && canMax && !!!parsed[Field.INPUT] ? '2rem' : 0}>
-          <Popover
-            trigger="hover"
-            placement="bottom"
-            isOpen={buy && canMax && !!!parsed[Field.INPUT] ? true : false}
-            returnFocusOnClose={false}
-          >
-            <PopoverTrigger>
-              <AmountInput
-                isDisabled={isInvalidRoute || swapping}
-                isInvalid={isInvalidBalance}
-                value={formatted[buy ? Field.INPUT : Field.OUTPUT]}
-                onChange={(value): void => {
-                  dispatch({
-                    type: ActionType.TYPE,
-                    payload: { field: buy ? Field.INPUT : Field.OUTPUT, value },
-                  })
-                }}
-              />
-            </PopoverTrigger>
+        <Stack ml="0.5rem" direction="row" alignItems="center">
+          <AmountInput
+            isDisabled={isInvalidRoute || swapping}
+            isInvalid={isInvalidBalance}
+            value={formatted[buy ? Field.INPUT : Field.OUTPUT]}
+            onChange={(value): void => {
+              dispatch({
+                type: ActionType.TYPE,
+                payload: { field: buy ? Field.INPUT : Field.OUTPUT, value },
+              })
+            }}
+          />
 
-            <PopoverContent width="min-content" border="none" background="transparent" boxShadow="none">
-              <Button
-                size="sm"
-                onClick={(): void => {
-                  dispatch({
-                    type: ActionType.TYPE,
-                    payload: { field: Field.INPUT, value: balance.toExact() },
-                  })
-                }}
-              >
-                Max
-              </Button>
-            </PopoverContent>
-          </Popover>
-        </Box>
+          {buy && canMax ? (
+            <Button
+              size="sm"
+              onClick={(): void => {
+                dispatch({
+                  type: ActionType.TYPE,
+                  payload: { field: Field.INPUT, value: balance.toExact() },
+                })
+              }}
+            >
+              Max
+            </Button>
+          ) : null}
+        </Stack>
 
         <Box ml="0.5rem">
           <TokenSelect
@@ -505,7 +493,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
           />
         </Box>
 
-        <Text fontSize="3xl" ml="0.25rem">
+        <Text fontSize="3xl" ml="0.25rem" lineHeight={1} pt="0.3rem">
           .
         </Text>
       </Stack>

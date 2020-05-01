@@ -1,22 +1,24 @@
-import { useLayoutEffect, ChangeEvent, forwardRef } from 'react'
+import { useLayoutEffect, ChangeEvent, useRef } from 'react'
 import { Input } from '@chakra-ui/core'
 
 import { escapeRegExp } from '../utils'
 
 const REGEX = RegExp(`^\\d*(?:\\\\.)?\\d*$`) // match escaped "." characters via in a non-capturing group
 
-const AmountInput = forwardRef<
-  HTMLInputElement,
-  {
-    isInvalid: boolean
-    isDisabled: boolean
-    value: string
-    onChange: (value: string) => void
-  }
->(({ isInvalid, isDisabled, value, onChange }, ref) => {
+export default function AmountInput({
+  isInvalid,
+  isDisabled,
+  value,
+  onChange,
+}: {
+  isInvalid: boolean
+  isDisabled: boolean
+  value: string
+  onChange: (value: string) => void
+}): JSX.Element {
+  const ref = useRef<HTMLInputElement>()
   useLayoutEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if ((ref as any)?.current) (ref as any).current.size = Math.max(1, value.length)
+    if (ref.current) ref.current.size = Math.max(1, value.length)
   })
 
   return (
@@ -54,6 +56,4 @@ const AmountInput = forwardRef<
       spellCheck="false"
     />
   )
-})
-
-export default AmountInput
+}
