@@ -10,6 +10,7 @@ import ColorBox from './ColorBox'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
 import TokenBalance from './TokenBalance'
+import { WETH } from '@uniswap/sdk'
 
 const Settings = dynamic(() => import('./Settings'))
 
@@ -53,12 +54,16 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
             spacing="1rem"
             zIndex={2}
           >
-            <Box>
-              <TokenBalance token={firstToken} />
-            </Box>
-            <Box>
-              <TokenBalance token={secondToken} />
-            </Box>
+            {firstToken && !firstToken.equals(WETH[firstToken.chainId]) ? (
+              <Box>
+                <TokenBalance token={firstToken} />
+              </Box>
+            ) : null}
+            {secondToken && !secondToken.equals(WETH[secondToken.chainId]) ? (
+              <Box>
+                <TokenBalance token={secondToken} />
+              </Box>
+            ) : null}
           </Stack>
         )}
 

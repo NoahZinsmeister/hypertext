@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Button, Text, IconButton, useColorMode } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
-import { Token, WETH } from '@uniswap/sdk'
+import { Token } from '@uniswap/sdk'
 
 import { formatEtherscanLink, EtherscanType } from '../utils'
 import { BG } from '../constants'
@@ -34,7 +34,7 @@ function Balance({ token }: { token: Token }): JSX.Element {
 
 export default function TokenBalance({ token }: { token: Token }): JSX.Element {
   const { colorMode } = useColorMode()
-  return !token || token.equals(WETH[token.chainId]) ? null : (
+  return (
     <ErrorBoundary
       fallback={
         <IconButton
