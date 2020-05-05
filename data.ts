@@ -3,8 +3,10 @@ import { Token, TokenAmount, Pair, JSBI, ChainId } from '@uniswap/sdk'
 import { useWeb3React } from '@web3-react/core'
 import { Contract } from '@ethersproject/contracts'
 import { parseBytes32String } from '@ethersproject/strings'
+import IERC20 from '@uniswap/v2-core/build/IERC20.json'
+import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
 
-import { ZERO, ADDRESS_ZERO, ERC20, ERC20_BYTES32, PAIR } from './constants'
+import { ZERO, ADDRESS_ZERO, ERC20_BYTES32 } from './constants'
 import { useContract } from './hooks'
 import { getAddress } from '@ethersproject/address'
 
@@ -54,7 +56,7 @@ export function useTokenBalance(
   suspense = false
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): responseInterface<TokenAmount, any> {
-  const contract = useContract(token?.address, ERC20)
+  const contract = useContract(token?.address, IERC20.abi)
   const shouldFetch = !!contract && typeof address === 'string'
   return useSWR(
     shouldFetch ? [DataType.TokenBalance, token.chainId, token.address, address] : null,
@@ -83,7 +85,7 @@ export function useTokenAllowance(
   spender?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): responseInterface<TokenAmount, any> {
-  const contract = useContract(token?.address, ERC20)
+  const contract = useContract(token?.address, IERC20.abi)
   const shouldFetch = !!contract && typeof owner === 'string' && typeof spender === 'string'
   return useSWR(
     shouldFetch ? [DataType.TokenAllowance, token.chainId, token.address, owner, spender] : null,
@@ -120,7 +122,7 @@ export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<P
         : [tokenB, tokenA]
       : []
   const pairAddress = !!token0 && !!token1 ? Pair.getAddress(token0, token1) : undefined
-  const contract = useContract(pairAddress, PAIR)
+  const contract = useContract(pairAddress, IUniswapV2Pair.abi)
   const shouldFetch = !!contract
   return useSWR(
     shouldFetch ? [DataType.Reserves, token0.chainId, pairAddress] : null,
@@ -160,7 +162,7 @@ function getOnchainToken(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useOnchainToken(address?: string, suspense = false): responseInterface<Token | null, any> {
   const { chainId } = useWeb3React()
-  const contract = useContract(address, ERC20)
+  const contract = useContract(address, IERC20.abi)
   const contractBytes32 = useContract(address, ERC20_BYTES32)
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string'
   return useSWR(shouldFetch ? [DataType.Token, chainId, address] : null, getOnchainToken(contract, contractBytes32), {

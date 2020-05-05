@@ -9,11 +9,9 @@ import {
   Dispatch,
   SetStateAction,
 } from 'react'
-import { useWeb3React } from '@web3-react/core'
 import { Token } from '@uniswap/sdk'
-import { Contract } from '@ethersproject/contracts'
 
-import { DEFAULT_APPROVE_MAX, DEFAULT_DEADLINE, DEFAULT_SLIPPAGE, ERC20, ERC20_BYTES32 } from './constants'
+import { DEFAULT_APPROVE_MAX, DEFAULT_DEADLINE, DEFAULT_SLIPPAGE } from './constants'
 
 enum LocalStorageKeys {
   Version = 'version',

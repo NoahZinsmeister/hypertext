@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { TradeType, TokenAmount, Trade, JSBI, WETH } from '@uniswap/sdk'
+import IERC20 from '@uniswap/v2-core/build/IERC20.json'
+import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
 import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
 
 import AmountInput from '../components/AmountInput'
@@ -11,7 +13,7 @@ import TokenSelect from '../components/TokenSelect'
 import { useTokenByAddress } from '../tokens'
 import { useRoute, useContract, useQueryParameters } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
-import { ROUTER_ADDRESS, ROUTER, ZERO, MAX_UINT256, ERC20, QueryParameters } from '../constants'
+import { ROUTER_ADDRESS, ZERO, MAX_UINT256, QueryParameters } from '../constants'
 import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
 import TradeSummary from '../components/TradeSummary'
 
@@ -260,8 +262,8 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   // function to perform the swap
   const [swapping, setSwapping] = useState(false)
-  const inputToken = useContract(tokens[Field.INPUT]?.address, ERC20, true)
-  const router = useContract(ROUTER_ADDRESS, ROUTER, true)
+  const inputToken = useContract(tokens[Field.INPUT]?.address, IERC20.abi, true)
+  const router = useContract(ROUTER_ADDRESS, IUniswapV2Router01.abi, true)
   async function swap(): Promise<void> {
     setSwapping(true)
 
