@@ -25,7 +25,6 @@ import {
 } from '@reach/combobox'
 import { getAddress } from '@ethersproject/address'
 import { useWeb3React } from '@web3-react/core'
-import copy from 'copy-to-clipboard'
 
 import { useAllTokens, DEFAULT_TOKENS, useTokenByAddress } from '../tokens'
 import { getTokenDisplayValue, shortenHex } from '../utils'
@@ -295,15 +294,17 @@ export default function TokenSelect({
               onCopy={(event): void => {
                 // copy the full address if we've shortened it
                 if (valueAsAddress) {
+                  event.clipboardData.setData('text/plain', valueAsAddress)
                   event.preventDefault()
-                  copy(valueAsAddress)
                 }
               }}
               onCut={(event): void => {
-                // copy the full address if we've shortened it
+                // cut the full address if we've shortened it
                 if (valueAsAddress) {
+                  event.clipboardData.setData('text/plain', valueAsAddress)
+                  onAddressSelect(undefined)
+                  setValue('')
                   event.preventDefault()
-                  copy(valueAsAddress)
                 }
               }}
               // chakra props
