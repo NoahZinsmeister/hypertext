@@ -115,12 +115,10 @@ function getReserves(contract: Contract, token0: Token, token1: Token): () => Pr
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<Pair | null, any> {
+  const bothDefined = !!tokenA && !!tokenB
+  const invalid = bothDefined && tokenA.equals(tokenB)
   const [token0, token1] =
-    !!tokenA && !!tokenB && !tokenA.equals(tokenB)
-      ? tokenA.sortsBefore(tokenB)
-        ? [tokenA, tokenB]
-        : [tokenB, tokenA]
-      : []
+    bothDefined && !invalid ? (tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]) : []
   const pairAddress = !!token0 && !!token1 ? Pair.getAddress(token0, token1) : undefined
   const contract = useContract(pairAddress, IUniswapV2Pair.abi)
   const shouldFetch = !!contract

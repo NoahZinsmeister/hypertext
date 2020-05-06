@@ -9,12 +9,15 @@ import {
   IconButton,
   Icon,
   StatArrow,
-  Box,
 } from '@chakra-ui/core'
 import { Route, Trade } from '@uniswap/sdk'
 
 import { getTokenDisplayValue, getPercentChange } from '../utils'
 import { useWindowSize } from '../hooks'
+
+function InvisibleWidthMaintainer({ children }: { children: string }): JSX.Element {
+  return <span style={{ display: 'block', maxHeight: 0, visibility: 'hidden' }}>{children}</span>
+}
 
 export default function TradeSummary({
   route,
@@ -71,12 +74,12 @@ export default function TradeSummary({
             '0.0'
           ) : (
             <>
-              <Box height={0} visibility="hidden">
+              <InvisibleWidthMaintainer>
                 {route.midPrice.toSignificant(4, { groupSeparator: ',' })}
-              </Box>
-              <Box height={0} visibility="hidden">
+              </InvisibleWidthMaintainer>
+              <InvisibleWidthMaintainer>
                 {route.midPrice.invert().toSignificant(4, { groupSeparator: ',' })}
-              </Box>
+              </InvisibleWidthMaintainer>
               {(invert ? route.midPrice.invert() : route.midPrice).toSignificant(4, { groupSeparator: ',' })}
             </>
           )}
@@ -98,12 +101,12 @@ export default function TradeSummary({
           >
             <StatLabel w="max-content">Fill Price</StatLabel>
             <StatNumber w="max-content">
-              <Box height={0} visibility="hidden">
+              <InvisibleWidthMaintainer>
                 {trade.executionPrice.toSignificant(4, { groupSeparator: ',' })}
-              </Box>
-              <Box height={0} visibility="hidden">
+              </InvisibleWidthMaintainer>
+              <InvisibleWidthMaintainer>
                 {trade.executionPrice.invert().toSignificant(4, { groupSeparator: ',' })}
-              </Box>
+              </InvisibleWidthMaintainer>
               {(invert ? trade.executionPrice.invert() : trade.executionPrice).toSignificant(4, {
                 groupSeparator: ',',
               })}
@@ -136,12 +139,12 @@ export default function TradeSummary({
           >
             <StatLabel w="max-content">Mid Price</StatLabel>
             <StatNumber w="max-content">
-              <Box height={0} visibility="hidden">
+              <InvisibleWidthMaintainer>
                 {trade.nextMidPrice.toSignificant(4, { groupSeparator: ',' })}
-              </Box>
-              <Box height={0} visibility="hidden">
+              </InvisibleWidthMaintainer>
+              <InvisibleWidthMaintainer>
                 {trade.nextMidPrice.invert().toSignificant(4, { groupSeparator: ',' })}
-              </Box>
+              </InvisibleWidthMaintainer>
               {(invert ? trade.nextMidPrice.invert() : trade.nextMidPrice).toSignificant(4, { groupSeparator: ',' })}
             </StatNumber>
             <StatHelpText w="max-content" m={0}>

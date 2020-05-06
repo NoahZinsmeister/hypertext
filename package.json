@@ -17,7 +17,7 @@
     "@ethersproject/strings": "^5.0.0-beta.136",
     "@ethersproject/units": "^5.0.0-beta.132",
     "@reach/combobox": "^0.10.1",
-    "@uniswap/sdk": "^2.0.1",
+    "@uniswap/sdk": "^2.0.3",
     "@uniswap/v2-core": "1.0.0",
     "@uniswap/v2-periphery": "1.0.0-beta.0",
     "@web3-react/core": "^6.0.9",

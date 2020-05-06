@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
-import { TradeType, TokenAmount, Trade, JSBI, WETH } from '@uniswap/sdk'
+import { TradeType, TokenAmount, JSBI, WETH } from '@uniswap/sdk'
 import IERC20 from '@uniswap/v2-core/build/IERC20.json'
 import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
 import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
@@ -11,7 +11,7 @@ import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
 import { useTokenByAddress } from '../tokens'
-import { useRoute, useContract, useQueryParameters } from '../hooks'
+import { useRoute, useContract, useQueryParameters, useTrade } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
 import { ROUTER_ADDRESS, ZERO, MAX_UINT256, QueryParameters } from '../constants'
 import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
@@ -162,7 +162,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   })
 
   // sdk route
-  const route = useRoute(tokens[Field.INPUT], tokens[Field.OUTPUT])
+  const [naiveRoute, allPairs] = useRoute(tokens[Field.INPUT], tokens[Field.OUTPUT])
 
   // parse user value
   const parsed: { [field: number]: TokenAmount } = {}
@@ -178,12 +178,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   }
 
   // sdk trade
-  let trade: Trade
-  try {
-    trade = route && parsed[independentField] ? new Trade(route, parsed[independentField], tradeType) : undefined
-  } catch {
-    // can fail if e.g. the user wants too much output
-  }
+  const trade = useTrade(tokens[Field.INPUT], tokens[Field.OUTPUT], allPairs, parsed[independentField], tradeType)
+
+  const route = trade ? trade.route : naiveRoute
 
   // populate the parsed dependent field
   if (trade) {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { useWeb3React } from '@web3-react/core'
-import { Token, Route, WETH } from '@uniswap/sdk'
+import { Token, Route, WETH, Pair, ChainId, TokenAmount, TradeType, Trade } from '@uniswap/sdk'
 
 import { injected } from './connectors'
 import { useReserves } from './data'
@@ -152,39 +152,85 @@ export function useQueryParameters(): {
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function useDirectPair(inputToken?: Token, outputToken?: Token) {
+  const bothDefined = !!inputToken && !!outputToken
+  const invalid = bothDefined && inputToken.equals(outputToken)
   const { data: pair } = useReserves(inputToken, outputToken)
-  return pair
+  return invalid ? null : pair
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function useETHPairs(inputToken?: Token, outputToken?: Token) {
-  const { data: inputPair } = useReserves(
-    inputToken,
-    inputToken?.equals(WETH[inputToken?.chainId]) ? undefined : WETH[inputToken?.chainId]
-  )
-  const { data: outputPair } = useReserves(
-    outputToken,
-    outputToken?.equals(WETH[outputToken?.chainId]) ? undefined : WETH[outputToken?.chainId]
-  )
-  return [inputPair, outputPair]
-}
-
-export function useRoute(inputToken?: Token, outputToken?: Token): undefined | Route | null {
+const DAI = new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin')
+const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD//C')
+export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | Route | null, Pair[]] {
   const directPair = useDirectPair(inputToken, outputToken)
-  const [inputPair, outputPair] = useETHPairs(
-    directPair === null ? inputToken : undefined,
-    directPair === null ? outputToken : undefined
-  )
+  // WETH pairs
+  const WETHInputPair = useDirectPair(WETH[inputToken?.chainId], inputToken)
+  const WETHOutputPair = useDirectPair(WETH[outputToken?.chainId], outputToken)
+  // DAI pairs
+  const DAIInputPair = useDirectPair(inputToken?.chainId === ChainId.MAINNET ? DAI : undefined, inputToken)
+  const DAIOutputPair = useDirectPair(outputToken?.chainId === ChainId.MAINNET ? DAI : undefined, outputToken)
+  // USDC pairs
+  const USDCInputPair = useDirectPair(inputToken?.chainId === ChainId.MAINNET ? USDC : undefined, inputToken)
+  const USDCOutputPair = useDirectPair(outputToken?.chainId === ChainId.MAINNET ? USDC : undefined, outputToken)
+  const pairs = [directPair, WETHInputPair, WETHOutputPair, DAIInputPair, DAIOutputPair, USDCInputPair, USDCOutputPair]
 
-  return useMemo(() => {
-    if (directPair) {
-      return new Route([directPair], inputToken)
-    } else if (inputPair && outputPair) {
-      return new Route([inputPair, outputPair], inputToken)
+  const directRoute = useMemo(
+    () => (directPair ? new Route([directPair], inputToken) : directPair === null ? null : undefined),
+    [directPair, inputToken]
+  )
+  const WETHRoute = useMemo(
+    () =>
+      WETHInputPair && WETHOutputPair
+        ? new Route([WETHInputPair, WETHOutputPair], inputToken)
+        : WETHInputPair === null || WETHOutputPair === null
+        ? null
+        : undefined,
+    [WETHInputPair, WETHOutputPair, inputToken]
+  )
+  const DAIRoute = useMemo(
+    () =>
+      DAIInputPair && DAIOutputPair
+        ? new Route([DAIInputPair, DAIOutputPair], inputToken)
+        : DAIInputPair === null || DAIOutputPair === null
+        ? null
+        : undefined,
+    [DAIInputPair, DAIOutputPair, inputToken]
+  )
+  const USDCRoute = useMemo(
+    () =>
+      USDCInputPair && USDCOutputPair
+        ? new Route([USDCInputPair, USDCOutputPair], inputToken)
+        : USDCInputPair === null || USDCOutputPair === null
+        ? null
+        : undefined,
+    [USDCInputPair, USDCOutputPair, inputToken]
+  )
+  const routes = [directRoute, WETHRoute, DAIRoute, USDCRoute]
+
+  return [
+    routes.filter((route) => !!route).length === 0 ? routes[0] : routes.filter((route) => !!route)[0],
+    pairs.filter((pair) => !!pair),
+  ]
+}
+
+export function useTrade(
+  inputToken: Token,
+  outputToken: Token,
+  pairs: Pair[],
+  independentAmount: TokenAmount,
+  tradeType: TradeType
+): undefined | Trade {
+  const canCompute = !!inputToken && !!inputToken && pairs.length > 0 && !!independentAmount
+
+  let trade: undefined | Trade
+  if (canCompute) {
+    if (tradeType === TradeType.EXACT_INPUT) {
+      trade = Trade.bestTradeExactIn(pairs, independentAmount, outputToken, { maxNumResults: 1, maxHops: 2 })[0]
     } else {
-      return directPair === null && (inputPair === null || outputPair === null) ? null : undefined
+      trade = Trade.bestTradeExactOut(pairs, inputToken, independentAmount, { maxNumResults: 1, maxHops: 2 })[0]
     }
-  }, [directPair, inputToken, inputPair, outputPair])
+  }
+
+  return trade
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
