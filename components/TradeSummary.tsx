@@ -9,6 +9,7 @@ import {
   IconButton,
   Icon,
   StatArrow,
+  Box,
 } from '@chakra-ui/core'
 import { Route, Trade } from '@uniswap/sdk'
 
@@ -66,11 +67,19 @@ export default function TradeSummary({
         </StatLabel>
 
         <StatNumber w="max-content">
-          {!!!route
-            ? '0.0'
-            : invert
-            ? route.midPrice.invert().toSignificant(4, { groupSeparator: ',' })
-            : route.midPrice.toSignificant(4, { groupSeparator: ',' })}
+          {!!!route ? (
+            '0.0'
+          ) : (
+            <>
+              <Box height={0} visibility="hidden">
+                {route.midPrice.toSignificant(4, { groupSeparator: ',' })}
+              </Box>
+              <Box height={0} visibility="hidden">
+                {route.midPrice.invert().toSignificant(4, { groupSeparator: ',' })}
+              </Box>
+              {(invert ? route.midPrice.invert() : route.midPrice).toSignificant(4, { groupSeparator: ',' })}
+            </>
+          )}
         </StatNumber>
         <StatHelpText w="max-content" m={0} height="initial">
           {path.length === 0 ? '‎' : path.slice(0, route.path.length - 1).join(' / ')}
@@ -89,11 +98,23 @@ export default function TradeSummary({
           >
             <StatLabel w="max-content">Fill Price</StatLabel>
             <StatNumber w="max-content">
-              {invert
-                ? trade.executionPrice.invert().toSignificant(4, { groupSeparator: ',' })
-                : trade.executionPrice.toSignificant(4, { groupSeparator: ',' })}
+              <Box height={0} visibility="hidden">
+                {trade.executionPrice.toSignificant(4, { groupSeparator: ',' })}
+              </Box>
+              <Box height={0} visibility="hidden">
+                {trade.executionPrice.invert().toSignificant(4, { groupSeparator: ',' })}
+              </Box>
+              {(invert ? trade.executionPrice.invert() : trade.executionPrice).toSignificant(4, {
+                groupSeparator: ',',
+              })}
             </StatNumber>
-            <StatHelpText w="max-content" m={0} opacity={1}>
+            <StatHelpText
+              w="max-content"
+              m={0}
+              opacity={1}
+              color={warning ? (colorMode === 'light' ? 'yellow.500' : 'yellow.200') : undefined}
+              fontWeight={warning ? 600 : undefined}
+            >
               {warning && (
                 <StatArrow
                   {...{
@@ -115,9 +136,13 @@ export default function TradeSummary({
           >
             <StatLabel w="max-content">Mid Price</StatLabel>
             <StatNumber w="max-content">
-              {invert
-                ? trade.nextMidPrice.invert().toSignificant(4, { groupSeparator: ',' })
-                : trade.nextMidPrice.toSignificant(4, { groupSeparator: ',' })}
+              <Box height={0} visibility="hidden">
+                {trade.nextMidPrice.toSignificant(4, { groupSeparator: ',' })}
+              </Box>
+              <Box height={0} visibility="hidden">
+                {trade.nextMidPrice.invert().toSignificant(4, { groupSeparator: ',' })}
+              </Box>
+              {(invert ? trade.nextMidPrice.invert() : trade.nextMidPrice).toSignificant(4, { groupSeparator: ',' })}
             </StatNumber>
             <StatHelpText w="max-content" m={0}>
               <StatArrow type={invert ? 'increase' : 'decrease'} />
