@@ -453,6 +453,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         ) : null}
 
         <TokenSelect
+          key={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
           initialValue={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
           isInvalid={isInvalidRoute}
           isDisabled={swapping}
@@ -498,6 +499,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         ) : null}
 
         <TokenSelect
+          key={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
           initialValue={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
           isInvalid={isInvalidRoute}
           isDisabled={swapping}
