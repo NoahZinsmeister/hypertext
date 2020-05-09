@@ -16,7 +16,11 @@ import { getTokenDisplayValue, getPercentChange } from '../utils'
 import { useWindowSize } from '../hooks'
 
 function InvisibleWidthMaintainer({ children }: { children: string }): JSX.Element {
-  return <span style={{ display: 'block', maxHeight: 0, visibility: 'hidden' }}>{children}</span>
+  return (
+    <span hidden={true} style={{ display: 'block', maxHeight: 0 }}>
+      {children}
+    </span>
+  )
 }
 
 export default function TradeSummary({
@@ -40,12 +44,7 @@ export default function TradeSummary({
   const path = !!!route ? [] : (invert ? route.path : route.path.slice().reverse()).map(getTokenDisplayValue)
 
   return (
-    <Stack
-      direction={isVertical ? 'column' : 'row'}
-      align="center"
-      spacing="1rem"
-      {...{ visibility: !!route ? 'visible' : 'hidden' }}
-    >
+    <Stack direction={isVertical ? 'column' : 'row'} align="center" spacing="1rem" hidden={!!route ? false : true}>
       <Stat
         p="1rem"
         backgroundColor={colorMode === 'light' ? 'gray.100' : 'rgba(255,255,255,0.04)'}
