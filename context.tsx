@@ -31,7 +31,6 @@ function useLocalStorage<T, S = T>(
   overrideLookup = false,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   { serialize, deserialize }: { serialize: (toSerialize: T) => S; deserialize: (toDeserialize: S) => T } = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     serialize: (toSerialize): S => (toSerialize as unknown) as S,
     deserialize: (toDeserialize): T => (toDeserialize as unknown) as T,
   }

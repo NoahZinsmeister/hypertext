@@ -123,7 +123,7 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
               </Stack>
             </Stack>
             <Stack direction="row" justify="space-between">
-              <Text>Front-Running Tolerance</Text>
+              <Text>Slippage Tolerance</Text>
               <Stack direction="column" spacing={0} alignItems="flex-end" w="50%" flexShrink={0}>
                 <Slider min={0} max={100 * 4} step={10} value={slippage} onChange={setSlippage}>
                   <SliderTrack />

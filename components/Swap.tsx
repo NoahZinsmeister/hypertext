@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
-import { TradeType, TokenAmount, JSBI, WETH } from '@uniswap/sdk'
+import { TradeType, TokenAmount, JSBI, WETH, Percent } from '@uniswap/sdk'
 import IERC20 from '@uniswap/v2-core/build/IERC20.json'
 import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
 import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
@@ -185,15 +185,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // populate the parsed dependent field
   if (trade) {
     if (tradeType === TradeType.EXACT_INPUT) {
-      parsed[dependentField] = new TokenAmount(
-        trade.outputAmount.token,
-        JSBI.divide(JSBI.multiply(trade.outputAmount.raw, JSBI.BigInt(10000 - slippage)), JSBI.BigInt(10000))
-      )
+      parsed[dependentField] = trade.minimumAmountOut(new Percent(`${slippage}`, `${10000}`))
     } else {
-      parsed[dependentField] = new TokenAmount(
-        trade.inputAmount.token,
-        JSBI.divide(JSBI.multiply(trade.inputAmount.raw, JSBI.BigInt(10000 + slippage)), JSBI.BigInt(10000))
-      )
+      parsed[dependentField] = trade.maximumAmountIn(new Percent(`${slippage}`, `${10000}`))
     }
   }
 

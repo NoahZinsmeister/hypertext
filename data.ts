@@ -3,14 +3,16 @@ import { Token, TokenAmount, Pair, JSBI, ChainId } from '@uniswap/sdk'
 import { useWeb3React } from '@web3-react/core'
 import { Contract } from '@ethersproject/contracts'
 import { parseBytes32String } from '@ethersproject/strings'
+import { getAddress } from '@ethersproject/address'
+import { Web3Provider } from '@ethersproject/providers'
 import IERC20 from '@uniswap/v2-core/build/IERC20.json'
 import IUniswapV2Pair from '@uniswap/v2-core/build/IUniswapV2Pair.json'
 
 import { ZERO, ADDRESS_ZERO, ERC20_BYTES32 } from './constants'
-import { useContract } from './hooks'
-import { getAddress } from '@ethersproject/address'
+import { useContract, useKeepSWRDataLiveAsBlocksArrive } from './hooks'
 
 export enum DataType {
+  BlockNumber,
   ETHBalance,
   TokenBalance,
   TokenAllowance,
@@ -19,9 +21,23 @@ export enum DataType {
   RemoteTokens,
 }
 
+function getBlockNumber(library: Web3Provider): () => Promise<number> {
+  return async (): Promise<number> => {
+    return library.getBlockNumber()
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getETHBalance(library: any): (_: DataType, chainId: number, address: string) => Promise<TokenAmount> {
-  return async (_, chainId: number, address: string): Promise<TokenAmount> => {
+export function useBlockNumber(): responseInterface<number, any> {
+  const { library } = useWeb3React()
+  const shouldFetch = !!library
+  return useSWR(shouldFetch ? [DataType.BlockNumber] : null, getBlockNumber(library), {
+    refreshInterval: 10 * 1000,
+  })
+}
+
+function getETHBalance(library: Web3Provider): (chainId: number, address: string) => Promise<TokenAmount> {
+  return async (chainId: number, address: string): Promise<TokenAmount> => {
     const ETH = new Token(chainId, ADDRESS_ZERO, 18)
     return library
       .getBalance(address)
@@ -33,18 +49,16 @@ function getETHBalance(library: any): (_: DataType, chainId: number, address: st
 export function useETHBalance(address?: string, suspense = false): responseInterface<TokenAmount, any> {
   const { chainId, library } = useWeb3React()
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string' && !!library
-  return useSWR(shouldFetch ? [DataType.ETHBalance, chainId, address] : null, getETHBalance(library), {
-    dedupingInterval: 15 * 1000,
-    refreshInterval: 30 * 1000,
+
+  const result = useSWR(shouldFetch ? [chainId, address, DataType.ETHBalance] : null, getETHBalance(library), {
     suspense,
   })
+  useKeepSWRDataLiveAsBlocksArrive(result.mutate)
+  return result
 }
 
-function getTokenBalance(
-  contract: Contract,
-  token: Token
-): (_: DataType, __: number, ___: string, address: string) => Promise<TokenAmount> {
-  return async (_, __, ___, address: string): Promise<TokenAmount> =>
+function getTokenBalance(contract: Contract, token: Token): (address: string) => Promise<TokenAmount> {
+  return async (address: string): Promise<TokenAmount> =>
     contract
       .balanceOf(address)
       .then((balance: { toString: () => string }) => new TokenAmount(token, balance.toString()))
@@ -58,22 +72,17 @@ export function useTokenBalance(
 ): responseInterface<TokenAmount, any> {
   const contract = useContract(token?.address, IERC20.abi)
   const shouldFetch = !!contract && typeof address === 'string'
-  return useSWR(
-    shouldFetch ? [DataType.TokenBalance, token.chainId, token.address, address] : null,
+  const result = useSWR(
+    shouldFetch ? [address, token.chainId, token.address, DataType.TokenBalance] : null,
     getTokenBalance(contract, token),
-    {
-      dedupingInterval: 15 * 1000,
-      refreshInterval: 30 * 1000,
-      suspense,
-    }
+    { suspense }
   )
+  useKeepSWRDataLiveAsBlocksArrive(result.mutate)
+  return result
 }
 
-function getTokenAllowance(
-  contract: Contract,
-  token: Token
-): (_: DataType, __: number, ___: string, owner: string, spender: string) => Promise<TokenAmount> {
-  return async (_, __, ___, owner: string, spender: string): Promise<TokenAmount> =>
+function getTokenAllowance(contract: Contract, token: Token): (owner: string, spender: string) => Promise<TokenAmount> {
+  return async (owner: string, spender: string): Promise<TokenAmount> =>
     contract
       .allowance(owner, spender)
       .then((balance: { toString: () => string }) => new TokenAmount(token, balance.toString()))
@@ -87,14 +96,12 @@ export function useTokenAllowance(
 ): responseInterface<TokenAmount, any> {
   const contract = useContract(token?.address, IERC20.abi)
   const shouldFetch = !!contract && typeof owner === 'string' && typeof spender === 'string'
-  return useSWR(
-    shouldFetch ? [DataType.TokenAllowance, token.chainId, token.address, owner, spender] : null,
-    getTokenAllowance(contract, token),
-    {
-      dedupingInterval: 30 * 1000,
-      refreshInterval: 60 * 1000,
-    }
+  const result = useSWR(
+    shouldFetch ? [owner, spender, token.chainId, token.address, DataType.TokenAllowance] : null,
+    getTokenAllowance(contract, token)
   )
+  useKeepSWRDataLiveAsBlocksArrive(result.mutate)
+  return result
 }
 
 function getReserves(contract: Contract, token0: Token, token1: Token): () => Promise<Pair | null> {
@@ -122,21 +129,19 @@ export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<P
   const pairAddress = !!token0 && !!token1 ? Pair.getAddress(token0, token1) : undefined
   const contract = useContract(pairAddress, IUniswapV2Pair.abi)
   const shouldFetch = !!contract
-  return useSWR(
-    shouldFetch ? [DataType.Reserves, token0.chainId, pairAddress] : null,
-    getReserves(contract, token0, token1),
-    {
-      dedupingInterval: 15 * 1000,
-      refreshInterval: 30 * 1000,
-    }
+  const result = useSWR(
+    shouldFetch ? [token0.chainId, pairAddress, DataType.Reserves] : null,
+    getReserves(contract, token0, token1)
   )
+  useKeepSWRDataLiveAsBlocksArrive(result.mutate)
+  return result
 }
 
 function getOnchainToken(
   contract: Contract,
   contractBytes32: Contract
-): (_: DataType, chainId: number, address: string) => Promise<Token | null> {
-  return async (_: DataType, chainId: number, address: string): Promise<Token | null> => {
+): (chainId: number, address: string) => Promise<Token> {
+  return async (chainId: number, address: string): Promise<Token> => {
     const [decimals, symbol, name] = await Promise.all([
       contract.decimals().catch(() => null),
       contract.symbol().catch(() =>
@@ -152,42 +157,22 @@ function getOnchainToken(
           .catch(() => 'Unknown')
       ),
     ])
-
     return decimals === null ? null : new Token(chainId, address, decimals, symbol, name)
   }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useOnchainToken(address?: string, suspense = false): responseInterface<Token | null, any> {
+export function useOnchainToken(address?: string, suspense = false): responseInterface<Token, any> {
   const { chainId } = useWeb3React()
   const contract = useContract(address, IERC20.abi)
   const contractBytes32 = useContract(address, ERC20_BYTES32)
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string'
-  return useSWR(shouldFetch ? [DataType.Token, chainId, address] : null, getOnchainToken(contract, contractBytes32), {
+  return useSWR(shouldFetch ? [chainId, address, DataType.Token] : null, getOnchainToken(contract, contractBytes32), {
     dedupingInterval: 60 * 1000,
+    refreshInterval: 60 * 1000,
     suspense,
   })
 }
-
-const rinkebyQuery = `
-query getRemoteTokens($searchQuery: String!) {
-  tokens(where: { symbol_contains: $searchQuery }) {
-    id
-    symbol
-    name
-  }
-}
-`
-
-const mainnetQuery = `
-query getRemoteTokens($searchQuery: String!) {
-  exchanges(where: { tokenSymbol_contains: $searchQuery }) {
-    tokenAddress
-    tokenSymbol
-    tokenName
-  }
-}
-`
 
 interface RemoteToken {
   address: string
@@ -196,24 +181,26 @@ interface RemoteToken {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getRemoteTokens(_: DataType, chainId: number, searchQuery: string): Promise<RemoteToken[]> {
+async function getRemoteTokens(searchQuery: string): Promise<RemoteToken[]> {
   const { request } = await import('graphql-request')
 
   return request(
-    chainId === ChainId.RINKEBY
-      ? 'https://api.thegraph.com/subgraphs/name/noahzinsmeister/uniswapv2test'
-      : 'https://api.thegraph.com/subgraphs/name/graphprotocol/uniswap',
-    chainId === ChainId.RINKEBY ? rinkebyQuery : mainnetQuery,
-    {
-      searchQuery,
-    }
+    'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2',
+    `
+query getRemoteTokens($searchQuery: String!) {
+  tokens(where: { symbol_contains: $searchQuery }) {
+    id
+    symbol
+    name
+  }
+}`,
+    { searchQuery }
   ).then((result) =>
-    (chainId === ChainId.RINKEBY ? result.tokens : result.exchanges).map(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (token: any): RemoteToken => ({
-        address: getAddress(chainId === ChainId.RINKEBY ? token.id : token.tokenAddress),
-        symbol: (chainId === ChainId.RINKEBY ? token.symbol : token.tokenSymbol) ?? 'UNKNOWN',
-        name: (chainId === ChainId.RINKEBY ? token.name : token.tokenName) ?? 'Unknown',
+    result.tokens.map(
+      (token: { id: string; symbol: string; name: string }): RemoteToken => ({
+        address: getAddress(token.id),
+        symbol: token.symbol ?? 'UNKNOWN',
+        name: token.name ?? 'Unknown',
       })
     )
   )
@@ -222,9 +209,10 @@ async function getRemoteTokens(_: DataType, chainId: number, searchQuery: string
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useRemoteTokens(query = '', suspense = false): responseInterface<RemoteToken[], any> {
   const { chainId } = useWeb3React()
-  const shouldFetch = (chainId === ChainId.RINKEBY || chainId === ChainId.MAINNET) && query.length > 0
-  return useSWR(shouldFetch ? [DataType.RemoteTokens, chainId, query] : null, getRemoteTokens, {
+  const shouldFetch = chainId === ChainId.MAINNET && query.length > 0
+  return useSWR(shouldFetch ? [query, DataType.RemoteTokens] : null, getRemoteTokens, {
     dedupingInterval: 60 * 5 * 1000,
+    refreshInterval: 60 * 5 * 1000,
     suspense,
   })
 }

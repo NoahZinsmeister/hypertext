@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import { Token, Route, WETH, Pair, ChainId, TokenAmount, TradeType, Trade } from '@uniswap/sdk'
 
 import { injected } from './connectors'
-import { useReserves } from './data'
+import { useReserves, useBlockNumber } from './data'
 import { Contract } from '@ethersproject/contracts'
 import { useRouter } from 'next/router'
 import { QueryParameters } from './constants'
 import { getAddress } from '@ethersproject/address'
+import { responseInterface } from 'swr'
 
 export function useWindowSize(): { width: number | undefined; height: number | undefined } {
   function getSize(): ReturnType<typeof useWindowSize> {
@@ -57,7 +58,7 @@ export function useBodyKeyDown(targetKey: string, onKeyDown: (event?: any) => vo
       if (
         !suppress &&
         event.key === targetKey &&
-        (event.target.tagName === 'BODY' || event.target.getAttribute('aria-modal') === 'true') &&
+        event.target.tagName === 'BODY' &&
         !event.altKey &&
         !event.ctrlKey &&
         !event.metaKey &&
@@ -74,6 +75,20 @@ export function useBodyKeyDown(targetKey: string, onKeyDown: (event?: any) => vo
       window.removeEventListener('keydown', downHandler)
     }
   }, [suppress, targetKey, downHandler])
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function useKeepSWRDataLiveAsBlocksArrive(mutate: responseInterface<any, any>['mutate']): void {
+  // because we don't care about the referential identity of mutate, just bind it to a ref
+  const mutateRef = useRef(mutate)
+  useEffect(() => {
+    mutateRef.current = mutate
+  })
+  // then, whenever a new block arrives, trigger a mutation
+  const { data } = useBlockNumber()
+  useEffect(() => {
+    mutateRef.current()
+  }, [data])
 }
 
 export function useEagerConnect(): boolean {
@@ -150,8 +165,7 @@ export function useQueryParameters(): {
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-function useDirectPair(inputToken?: Token, outputToken?: Token) {
+function useDirectPair(inputToken?: Token, outputToken?: Token): Pair {
   const bothDefined = !!inputToken && !!outputToken
   const invalid = bothDefined && inputToken.equals(outputToken)
   const { data: pair } = useReserves(inputToken, outputToken)
@@ -161,6 +175,7 @@ function useDirectPair(inputToken?: Token, outputToken?: Token) {
 const DAI = new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin')
 const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD//C')
 export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | Route | null, Pair[]] {
+  // direct pair
   const directPair = useDirectPair(inputToken, outputToken)
   // WETH pairs
   const WETHInputPair = useDirectPair(WETH[inputToken?.chainId], inputToken)
@@ -171,7 +186,30 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
   // USDC pairs
   const USDCInputPair = useDirectPair(inputToken?.chainId === ChainId.MAINNET ? USDC : undefined, inputToken)
   const USDCOutputPair = useDirectPair(outputToken?.chainId === ChainId.MAINNET ? USDC : undefined, outputToken)
-  const pairs = [directPair, WETHInputPair, WETHOutputPair, DAIInputPair, DAIOutputPair, USDCInputPair, USDCOutputPair]
+  // connecting pairs
+  const DAIWETH = useDirectPair(inputToken?.chainId === ChainId.MAINNET ? DAI : undefined, WETH[DAI.chainId])
+  const USDCWETH = useDirectPair(inputToken?.chainId === ChainId.MAINNET ? USDC : undefined, WETH[USDC.chainId])
+  const DAIUSDC = useDirectPair(
+    inputToken?.chainId === ChainId.MAINNET ? DAI : undefined,
+    inputToken?.chainId === ChainId.MAINNET ? USDC : undefined
+  )
+
+  const pairs = [
+    directPair,
+    WETHInputPair,
+    WETHOutputPair,
+    DAIInputPair,
+    DAIOutputPair,
+    USDCInputPair,
+    USDCOutputPair,
+    DAIWETH,
+    USDCWETH,
+    DAIUSDC,
+  ]
+    // filter out invalid pairs
+    .filter((p) => !!p)
+    // filter out duplicated pairs
+    .filter((p, i, pairs) => i === pairs.findIndex((pair) => pair.liquidityToken.address === p.liquidityToken.address))
 
   const directRoute = useMemo(
     () => (directPair ? new Route([directPair], inputToken) : directPair === null ? null : undefined),
@@ -207,8 +245,12 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
   const routes = [directRoute, WETHRoute, DAIRoute, USDCRoute]
 
   return [
-    routes.filter((route) => !!route).length === 0 ? routes[0] : routes.filter((route) => !!route)[0],
-    pairs.filter((pair) => !!pair),
+    routes.filter((route) => !!route).length > 0
+      ? routes[0]
+      : routes.some((route) => route === undefined)
+      ? undefined
+      : null,
+    pairs,
   ]
 }
 
@@ -219,14 +261,14 @@ export function useTrade(
   independentAmount: TokenAmount,
   tradeType: TradeType
 ): undefined | Trade {
-  const canCompute = !!inputToken && !!inputToken && pairs.length > 0 && !!independentAmount
+  const canCompute = !!inputToken && !!outputToken && pairs.length > 0 && !!independentAmount
 
   let trade: undefined | Trade
   if (canCompute) {
     if (tradeType === TradeType.EXACT_INPUT) {
-      trade = Trade.bestTradeExactIn(pairs, independentAmount, outputToken, { maxNumResults: 1, maxHops: 2 })[0]
+      trade = Trade.bestTradeExactIn(pairs, independentAmount, outputToken, { maxNumResults: 1 })[0]
     } else {
-      trade = Trade.bestTradeExactOut(pairs, inputToken, independentAmount, { maxNumResults: 1, maxHops: 2 })[0]
+      trade = Trade.bestTradeExactOut(pairs, inputToken, independentAmount, { maxNumResults: 1 })[0]
     }
   }
 

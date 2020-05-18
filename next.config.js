@@ -1,7 +1,4 @@
 module.exports = {
-  experimental: {
-    reactRefresh: true,
-  },
   reactStrictMode: true,
   assetPrefix: '.',
   env: {

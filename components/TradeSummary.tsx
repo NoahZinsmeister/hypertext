@@ -126,7 +126,7 @@ export default function TradeSummary({
                   }}
                 />
               )}
-              {trade.slippage.toSignificant(3, { groupSeparator: ',' })}% slippage
+              {trade.slippage.toSignificant(3, { groupSeparator: ',' })}% price impact
             </StatHelpText>
           </Stat>
 
