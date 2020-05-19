@@ -1,5 +1,5 @@
 import { useRef, useState, useLayoutEffect, ChangeEvent, useMemo, Suspense } from 'react'
-import { Token, WETH } from '@uniswap/sdk'
+import { Token, WETH, ChainId } from '@uniswap/sdk'
 import {
   Input,
   Stack,
@@ -189,6 +189,7 @@ export default function TokenSelect({
 }): JSX.Element {
   const { colors } = useTheme()
   const { colorMode } = useColorMode()
+  const { chainId } = useWeb3React()
 
   const [tokens, { removeToken }] = useAllTokens()
 
@@ -374,7 +375,9 @@ export default function TokenSelect({
                 <PastedToken address={valueAsAddress} />
               ) : null}
 
-              {value.length >= 2 && valueAsAddress === null && !selectedToken ? <RemoteTokens query={value} /> : null}
+              {value.length >= 2 && valueAsAddress === null && !selectedToken && chainId === ChainId.MAINNET ? (
+                <RemoteTokens query={value} />
+              ) : null}
             </ComboboxPopover>
           </Box>
         </Box>
