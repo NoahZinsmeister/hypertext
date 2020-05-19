@@ -187,7 +187,7 @@ export default function TokenSelect({
 
   // if the currently selected token address is in our list, pluck it out
   const [tokens, { removeToken }] = useAllTokens()
-  const token = tokens.filter((token) => token.address === tokenAddress)[0]
+  const tokenDerivedFromProps = tokens.filter((token) => token.address === tokenAddress)[0]
 
   const [value, setValue] = useState(tokenAddress ?? '')
   // keep the state in sync with the prop, when the prop changes to a valid value
@@ -215,10 +215,11 @@ export default function TokenSelect({
 
   const filteredTokens = tokens
     .filter((token) => {
+      const exclude = firstToken?.equals(token) || secondToken?.equals(token)
       const addressMatch = valueAsAddress === token.address
       const displayMatch = value.toLowerCase() === getTokenDisplayValue(token).slice(0, value.length).toLowerCase()
       const nameMatch = !token.equals(WETH[token.chainId]) && token.name.toLowerCase().includes(value.toLowerCase())
-      return addressMatch || displayMatch || nameMatch
+      return !exclude && (addressMatch || displayMatch || nameMatch)
     })
     .sort((a: Token, b: Token) => {
       const aExact =
@@ -227,9 +228,9 @@ export default function TokenSelect({
       const bExact =
         valueAsAddress === b.address ||
         value.toLowerCase() === getTokenDisplayValue(b).slice(0, value.length).toLowerCase()
-      if (token && a.equals(token)) {
+      if (tokenDerivedFromProps && a.equals(tokenDerivedFromProps)) {
         return -1
-      } else if (token && b.equals(token)) {
+      } else if (tokenDerivedFromProps && b.equals(tokenDerivedFromProps)) {
         return 1
       } else if (aExact && !bExact) {
         return -1
@@ -247,8 +248,8 @@ export default function TokenSelect({
   const ref = useRef<HTMLInputElement>()
   useLayoutEffect(() => {
     if (ref.current)
-      ref.current.size = token
-        ? getTokenDisplayValue(token).length
+      ref.current.size = tokenDerivedFromProps
+        ? getTokenDisplayValue(tokenDerivedFromProps).length
         : valueAsAddress === null
         ? value.length === 0
           ? 7
@@ -259,7 +260,7 @@ export default function TokenSelect({
   return (
     <>
       <Combobox openOnFocus onSelect={onSelect}>
-        <TokenLogoColor token={token}>
+        <TokenLogoColor token={tokenDerivedFromProps}>
           {(swatch): JSX.Element => (
             <ComboboxInput
               selectOnClick
@@ -267,7 +268,11 @@ export default function TokenSelect({
               as={Input}
               ref={ref}
               value={
-                token ? getTokenDisplayValue(token) : valueAsAddress === null ? value : shortenHex(valueAsAddress, 4)
+                tokenDerivedFromProps
+                  ? getTokenDisplayValue(tokenDerivedFromProps)
+                  : valueAsAddress === null
+                  ? value
+                  : shortenHex(valueAsAddress, 4)
               }
               onChange={onChange}
               title="Token Select"
@@ -306,7 +311,7 @@ export default function TokenSelect({
         <Box maxHeight={0} position="relative" zIndex={2}>
           <Box position="absolute">
             {/* hide popover content when there's a token selected */}
-            {!token && (
+            {!tokenDerivedFromProps && (
               <ComboboxPopover portal={false}>
                 {(value === '' || tokenAddress === value) && (
                   <Text mx="1rem" my="0.5rem" textAlign="center" color="gray.500">
