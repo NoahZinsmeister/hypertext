@@ -49,7 +49,7 @@ export function useAllTokens(): [Token[], ReturnType<typeof useLocalStorageToken
   ]
 }
 
-export function useTokenByAddress(tokenAddress?: string): Token | undefined {
+export function useTokenByAddressAndAutomaticallyAdd(tokenAddress?: string): Token | undefined {
   const [allTokens, { addToken }] = useAllTokens()
 
   const token = useMemo(() => allTokens.filter((token) => token.address === tokenAddress)[0], [allTokens, tokenAddress])

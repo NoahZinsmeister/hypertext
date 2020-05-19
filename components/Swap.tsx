@@ -10,7 +10,7 @@ import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
 
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
-import { useTokenByAddress } from '../tokens'
+import { useTokenByAddressAndAutomaticallyAdd } from '../tokens'
 import { useRoute, useContract, useQueryParameters, useTrade } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
 import { ROUTER_ADDRESS, ZERO, MAX_UINT256, QueryParameters } from '../constants'
@@ -149,8 +149,8 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   // sdk tokens
   const tokens = {
-    [Field.INPUT]: useTokenByAddress(tokenAddresses[Field.INPUT].address),
-    [Field.OUTPUT]: useTokenByAddress(tokenAddresses[Field.OUTPUT].address),
+    [Field.INPUT]: useTokenByAddressAndAutomaticallyAdd(tokenAddresses[Field.INPUT].address),
+    [Field.OUTPUT]: useTokenByAddressAndAutomaticallyAdd(tokenAddresses[Field.OUTPUT].address),
   }
 
   // keep global token state in sync
@@ -447,11 +447,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         ) : null}
 
         <TokenSelect
-          key={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
-          initialValue={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
+          tokenAddress={tokenAddresses[buy ? Field.OUTPUT : Field.INPUT].address}
           isInvalid={isInvalidRoute}
           isDisabled={swapping}
-          selectedToken={tokens[buy ? Field.OUTPUT : Field.INPUT]}
           onAddressSelect={(address): void => {
             dispatch({
               type: ActionType.SELECT_TOKEN,
@@ -493,11 +491,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         ) : null}
 
         <TokenSelect
-          key={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
-          initialValue={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
+          tokenAddress={tokenAddresses[buy ? Field.INPUT : Field.OUTPUT].address}
           isInvalid={isInvalidRoute}
           isDisabled={swapping}
-          selectedToken={tokens[buy ? Field.INPUT : Field.OUTPUT]}
           onAddressSelect={(address): void => {
             dispatch({
               type: ActionType.SELECT_TOKEN,

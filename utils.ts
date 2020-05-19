@@ -1,4 +1,4 @@
-import { JSBI, Fraction, Percent, Price, Token, WETH } from '@uniswap/sdk'
+import { JSBI, Fraction, Percent, Price, Token, WETH, ChainId } from '@uniswap/sdk'
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Escaping
 export function escapeRegExp(string: string): string {
@@ -62,8 +62,9 @@ export function formatEtherscanLink(type: EtherscanType, data: EtherscanTypeData
   }
 }
 
+const SAI = new Token(ChainId.MAINNET, '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359', 18)
 export function getTokenDisplayValue(token: Token): string {
-  return token.equals(WETH[token.chainId]) ? 'ETH' : token.symbol
+  return token.equals(WETH[token.chainId]) ? 'ETH' : token.equals(SAI) ? 'SAI' : token.symbol
 }
 
 export function getPercentChange(referenceRate: Price, newRate: Price, flipOrder = false): Percent {

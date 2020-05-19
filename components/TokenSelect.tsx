@@ -1,4 +1,4 @@
-import { useRef, useState, useLayoutEffect, ChangeEvent, useMemo, Suspense } from 'react'
+import { useRef, useState, useLayoutEffect, ChangeEvent, useMemo, Suspense, useEffect } from 'react'
 import { Token, WETH, ChainId } from '@uniswap/sdk'
 import {
   Input,
@@ -15,18 +15,11 @@ import {
   Icon,
   Box,
 } from '@chakra-ui/core'
-import {
-  Combobox,
-  ComboboxInput,
-  ComboboxPopover,
-  ComboboxList,
-  ComboboxOption,
-  ComboboxOptionText,
-} from '@reach/combobox'
+import { Combobox, ComboboxInput, ComboboxPopover, ComboboxList, ComboboxOption } from '@reach/combobox'
 import { getAddress } from '@ethersproject/address'
 import { useWeb3React } from '@web3-react/core'
 
-import { useAllTokens, DEFAULT_TOKENS, useTokenByAddress } from '../tokens'
+import { useAllTokens, DEFAULT_TOKENS } from '../tokens'
 import { getTokenDisplayValue, shortenHex } from '../utils'
 import TokenLogo, { TokenLogoColor } from './TokenLogo'
 import { useFirstToken, useSecondToken } from '../context'
@@ -175,28 +168,35 @@ function RemoteTokensData({ query }: { query: string }): JSX.Element {
 }
 
 export default function TokenSelect({
-  initialValue,
+  tokenAddress,
   isInvalid,
   isDisabled,
-  selectedToken,
   onAddressSelect,
 }: {
-  initialValue?: string
+  tokenAddress?: string
   isInvalid: boolean
   isDisabled: boolean
-  selectedToken?: Token
   onAddressSelect: (address: string) => void
 }): JSX.Element {
   const { colors } = useTheme()
   const { colorMode } = useColorMode()
   const { chainId } = useWeb3React()
 
-  const [tokens, { removeToken }] = useAllTokens()
-
   const [firstToken] = useFirstToken()
   const [secondToken] = useSecondToken()
 
-  const [value, setValue] = useState(selectedToken ? getTokenDisplayValue(selectedToken) : initialValue || '')
+  // if the currently selected token address is in our list, pluck it out
+  const [tokens, { removeToken }] = useAllTokens()
+  const token = tokens.filter((token) => token.address === tokenAddress)[0]
+
+  const [value, setValue] = useState(tokenAddress ?? '')
+  // keep the state in sync with the prop, when the prop changes to a valid value
+  useEffect(() => {
+    if (tokenAddress) {
+      setValue(tokenAddress)
+    }
+  }, [tokenAddress])
+  // try to parse the value as an address
   let valueAsAddress: string | null
   try {
     valueAsAddress = getAddress(value)
@@ -204,30 +204,13 @@ export default function TokenSelect({
     valueAsAddress = null
   }
 
-  // in charge of adding selecting remote + onchain tokens to the user list
-  const [tokenAddressToFetch, setTokenAddressToFetch] = useState<string>()
-  useTokenByAddress(tokenAddressToFetch)
-
-  function onSelect(displayValue: string): void {
-    const selectedTokenAddress = tokens.filter((token) => getTokenDisplayValue(token) === displayValue)[0]?.address
-
-    // the user clicked on a token in the default list, or their localstorage list
-    if (selectedTokenAddress) {
-      setValue('')
-      onAddressSelect(selectedTokenAddress)
-    }
-    // the user clicked on a token whose details were fetched from the chain via address, or fetched remotely
-    else {
-      setValue(displayValue)
-      setTokenAddressToFetch(displayValue)
-    }
+  function onSelect(tokenAddress: string): void {
+    onAddressSelect(tokenAddress)
   }
 
   function onChange(event: ChangeEvent<HTMLInputElement>): void {
-    // unset the selected address
-    onAddressSelect(undefined)
-    // set the value
-    setValue(event.target.value)
+    onAddressSelect(undefined) // unset the selected address
+    setValue(event.target.value) // set the value
   }
 
   const filteredTokens = tokens
@@ -244,9 +227,9 @@ export default function TokenSelect({
       const bExact =
         valueAsAddress === b.address ||
         value.toLowerCase() === getTokenDisplayValue(b).slice(0, value.length).toLowerCase()
-      if (selectedToken && a.equals(selectedToken)) {
+      if (token && a.equals(token)) {
         return -1
-      } else if (selectedToken && b.equals(selectedToken)) {
+      } else if (token && b.equals(token)) {
         return 1
       } else if (aExact && !bExact) {
         return -1
@@ -257,15 +240,15 @@ export default function TokenSelect({
       } else if (b.equals(WETH[b.chainId])) {
         return 1
       } else {
-        return getTokenDisplayValue(a).toLowerCase() > getTokenDisplayValue(b).toLowerCase() ? 1 : -1
+        return getTokenDisplayValue(a).toLowerCase() < getTokenDisplayValue(b).toLowerCase() ? -1 : 1
       }
     })
 
   const ref = useRef<HTMLInputElement>()
   useLayoutEffect(() => {
     if (ref.current)
-      ref.current.size = selectedToken
-        ? getTokenDisplayValue(selectedToken).length
+      ref.current.size = token
+        ? getTokenDisplayValue(token).length
         : valueAsAddress === null
         ? value.length === 0
           ? 7
@@ -276,7 +259,7 @@ export default function TokenSelect({
   return (
     <>
       <Combobox openOnFocus onSelect={onSelect}>
-        <TokenLogoColor token={selectedToken}>
+        <TokenLogoColor token={token}>
           {(swatch): JSX.Element => (
             <ComboboxInput
               selectOnClick
@@ -284,28 +267,24 @@ export default function TokenSelect({
               as={Input}
               ref={ref}
               value={
-                selectedToken
-                  ? getTokenDisplayValue(selectedToken)
-                  : valueAsAddress === null
-                  ? value
-                  : shortenHex(valueAsAddress, 4)
+                token ? getTokenDisplayValue(token) : valueAsAddress === null ? value : shortenHex(valueAsAddress, 4)
               }
               onChange={onChange}
               title="Token Select"
               onCopy={(event): void => {
                 // copy the full address if we've shortened it
                 if (valueAsAddress) {
-                  event.clipboardData.setData('text/plain', valueAsAddress)
                   event.preventDefault()
+                  event.clipboardData.setData('text/plain', valueAsAddress)
                 }
               }}
               onCut={(event): void => {
                 // cut the full address if we've shortened it
                 if (valueAsAddress) {
+                  event.preventDefault()
                   event.clipboardData.setData('text/plain', valueAsAddress)
                   onAddressSelect(undefined)
                   setValue('')
-                  event.preventDefault()
                 }
               }}
               // chakra props
@@ -326,59 +305,62 @@ export default function TokenSelect({
 
         <Box maxHeight={0} position="relative" zIndex={2}>
           <Box position="absolute">
-            <ComboboxPopover portal={false}>
-              {value === '' && (
-                <Text mx="1rem" my="0.5rem" textAlign="center" color="gray.500">
-                  Paste token address or search
-                </Text>
-              )}
-              <ComboboxList as={List}>
-                {filteredTokens.map((token) => {
-                  const userAdded = !DEFAULT_TOKENS.some((defaultToken) => defaultToken.equals(token))
-                  return (
-                    <ComboboxOption as={ListItem} key={token.address} value={getTokenDisplayValue(token)}>
-                      <Stack direction="row" align="center" p="0.5rem">
-                        <Box>
-                          <TokenLogo token={token} size="1.5rem" />
-                        </Box>
+            {/* hide popover content when there's a token selected */}
+            {!token && (
+              <ComboboxPopover portal={false}>
+                {(value === '' || tokenAddress === value) && (
+                  <Text mx="1rem" my="0.5rem" textAlign="center" color="gray.500">
+                    Paste token address or search
+                  </Text>
+                )}
+                <ComboboxList as={List}>
+                  {filteredTokens.map((token) => {
+                    const userAdded = !DEFAULT_TOKENS.some((defaultToken) => defaultToken.equals(token))
+                    return (
+                      <ComboboxOption as={ListItem} key={token.address} value={token.address}>
+                        <Stack direction="row" align="center" p="0.5rem">
+                          <Box>
+                            <TokenLogo token={token} size="1.5rem" />
+                          </Box>
 
-                        <Stack direction="column" ml="1rem" spacing={0} shouldWrapChildren>
-                          <ComboboxOptionText />
-                          <Text fontSize="1rem">{WETH[token.chainId].equals(token) ? 'Ethereum' : token.name}</Text>
+                          <Stack direction="column" ml="1rem" spacing={0} shouldWrapChildren>
+                            <Text>{getTokenDisplayValue(token)}</Text>
+                            <Text fontSize="1rem">{WETH[token.chainId].equals(token) ? 'Ethereum' : token.name}</Text>
+                          </Stack>
+
+                          {userAdded && (
+                            <Flex flexGrow={1} mb="auto" justifyContent="flex-end">
+                              <IconButton
+                                isDisabled={
+                                  (!!firstToken && firstToken.equals(token)) ||
+                                  (!!secondToken && secondToken.equals(token))
+                                }
+                                icon="close"
+                                variant="ghost"
+                                size="sm"
+                                aria-label="Remove"
+                                onClick={(event): void => {
+                                  event.preventDefault()
+                                  removeToken(token)
+                                }}
+                              />
+                            </Flex>
+                          )}
                         </Stack>
+                      </ComboboxOption>
+                    )
+                  })}
+                </ComboboxList>
 
-                        {userAdded && (
-                          <Flex flexGrow={1} mb="auto" justifyContent="flex-end">
-                            <IconButton
-                              isDisabled={
-                                (!!firstToken && firstToken.equals(token)) ||
-                                (!!secondToken && secondToken.equals(token))
-                              }
-                              icon="close"
-                              variant="ghost"
-                              size="sm"
-                              aria-label="Remove"
-                              onClick={(event): void => {
-                                event.preventDefault()
-                                removeToken(token)
-                              }}
-                            />
-                          </Flex>
-                        )}
-                      </Stack>
-                    </ComboboxOption>
-                  )
-                })}
-              </ComboboxList>
+                {valueAsAddress !== null && !tokens.some((token) => token.address === valueAsAddress) ? (
+                  <PastedToken address={valueAsAddress} />
+                ) : null}
 
-              {typeof valueAsAddress === 'string' && !tokens.some((token) => token.address === valueAsAddress) ? (
-                <PastedToken address={valueAsAddress} />
-              ) : null}
-
-              {value.length >= 2 && valueAsAddress === null && !selectedToken && chainId === ChainId.MAINNET ? (
-                <RemoteTokens query={value} />
-              ) : null}
-            </ComboboxPopover>
+                {value.length >= 2 && valueAsAddress === null && chainId === ChainId.MAINNET ? (
+                  <RemoteTokens query={value} />
+                ) : null}
+              </ComboboxPopover>
+            )}
           </Box>
         </Box>
       </Combobox>
@@ -409,14 +391,6 @@ export default function TokenSelect({
 
         :global([data-reach-combobox-option][data-highlighted]) {
           background: ${colorMode === 'light' ? colors.gray[100] : 'rgba(255,255,255,0.04)'} !important;
-        }
-
-        :global([data-user-value]) {
-          font-weight: bold;
-        }
-
-        :global([data-suggested-value]) {
-          font-weight: normal;
         }
       `}</style>
     </>
