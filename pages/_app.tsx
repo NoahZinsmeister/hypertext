@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useLayoutEffect, useEffect } from 'react'
 import { NextComponentType } from 'next'
 import NextApp from 'next/app'
 import Head from 'next/head'
@@ -19,9 +19,11 @@ import '../styles.css'
 import '@reach/combobox/styles.css'
 import { QueryParameters } from '../constants'
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
+
 function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Element {
   const [painted, setPainted] = useState(false)
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     setPainted(true)
   }, [])
 
