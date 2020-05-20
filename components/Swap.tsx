@@ -193,13 +193,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   // calculate the formatted values from the parsed
   const formatted = {
-    [independentField]:
-      value.slice(0, 1) === '.'
-        ? value
-        : parsed[independentField]
-        ? parsed[independentField].toSignificant(value.length, { groupSeparator: ',' }) +
-          (value.slice(-1) === '.' ? '.' : '') // postpend with trailing '.' if one was typed
-        : value,
+    [independentField]: value,
     [dependentField]: parsed[dependentField] ? parsed[dependentField].toSignificant(4, { groupSeparator: ',' }) : '',
   }
 
@@ -420,6 +414,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         ) : null}
 
         <AmountInput
+          controlled={independentField === (buy ? Field.OUTPUT : Field.INPUT)}
           isDisabled={isInvalidRoute || swapping}
           isInvalid={isInvalidTrade}
           value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
@@ -464,6 +459,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         </SwapText>
 
         <AmountInput
+          controlled={independentField === (buy ? Field.INPUT : Field.OUTPUT)}
           isDisabled={isInvalidRoute || swapping}
           isInvalid={isInvalidBalance}
           value={formatted[buy ? Field.INPUT : Field.OUTPUT]}

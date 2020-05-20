@@ -3,14 +3,16 @@ import { Input } from '@chakra-ui/core'
 
 import { escapeRegExp } from '../utils'
 
-const REGEX = RegExp(`^\\d*(?:\\\\.)?\\d*$`) // match escaped "." characters via in a non-capturing group
+const REGEX = RegExp(`^\\d*(?:\\\\[.])?\\d*$`) // match escaped "." characters in a non-capturing group
 
 export default function AmountInput({
+  controlled,
   isInvalid,
   isDisabled,
   value,
   onChange,
 }: {
+  controlled: boolean
   isInvalid: boolean
   isDisabled: boolean
   value: string
@@ -26,7 +28,8 @@ export default function AmountInput({
       ref={ref}
       value={value}
       onChange={(event: ChangeEvent<HTMLInputElement>): void => {
-        const value = event.target.value.replace(/,/g, '')
+        // if the user is typing, interpret commas as decimal separators and replace them with periods
+        const value = event.target.value.replace(/,/g, !controlled ? '' : '.')
         if (value === '' || REGEX.test(escapeRegExp(value))) {
           onChange(value)
         }
