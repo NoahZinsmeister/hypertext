@@ -42,8 +42,8 @@ export default function TradeSummary({
   return (
     <Stack
       direction={isVertical ? 'column' : 'row'}
-      align="center"
-      spacing="1rem"
+      align={isVertical ? 'center' : 'flex-start'}
+      spacing={0}
       visibility={!!route ? 'visible' : 'hidden'}
     >
       <Stat
@@ -91,8 +91,12 @@ export default function TradeSummary({
       </Stat>
 
       {!!trade && (
-        <Stack direction={isVertical ? 'column' : 'row'} align="center" spacing="1rem">
-          <Icon name={isVertical ? 'chevron-down' : 'chevron-right'} size="3rem" />
+        <>
+          <Icon
+            name={isVertical ? 'chevron-down' : 'chevron-right'}
+            size="3rem"
+            m={isVertical ? '1rem auto' : 'auto 1rem'}
+          />
 
           <Stat
             p="1rem"
@@ -130,7 +134,11 @@ export default function TradeSummary({
             </StatHelpText>
           </Stat>
 
-          <Icon name={isVertical ? 'chevron-down' : 'chevron-right'} size="3rem" />
+          <Icon
+            name={isVertical ? 'chevron-down' : 'chevron-right'}
+            size="3rem"
+            m={isVertical ? '1rem auto' : 'auto 1rem'}
+          />
 
           <Stat
             p="1rem"
@@ -157,7 +165,7 @@ export default function TradeSummary({
               %
             </StatHelpText>
           </Stat>
-        </Stack>
+        </>
       )}
     </Stack>
   )
