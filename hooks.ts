@@ -246,7 +246,7 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
 
   return [
     routes.filter((route) => !!route).length > 0
-      ? routes[0]
+      ? routes.filter((route) => !!route)[0]
       : routes.some((route) => route === undefined)
       ? undefined
       : null,

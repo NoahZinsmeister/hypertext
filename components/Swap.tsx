@@ -234,7 +234,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // compute validation flags
   const isInvalidBalance =
     parsed[Field.INPUT] && balance ? JSBI.greaterThan(parsed[Field.INPUT].raw, balance.raw) : false
-  const isInvalidRoute = route === null
+  const isInvalidRoute = route === null && value.length > 0
   const isInvalidTrade = route && parsed[independentField] ? !!!trade : false
 
   // compute flag for whether maxing is allowed
