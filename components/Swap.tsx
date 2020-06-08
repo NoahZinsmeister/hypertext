@@ -400,7 +400,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             lineHeight={1}
             height="min-content"
             leftIcon={!warning ? undefined : !danger ? 'warning-2' : 'not-allowed'}
-            isDisabled={isInvalidBalance || isInvalidTrade}
+            isDisabled={!account || isInvalidBalance || isInvalidTrade}
             isLoading={swapping}
             cursor={warning ? 'not-allowed' : 'pointer'}
             onClick={swap}
