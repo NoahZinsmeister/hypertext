@@ -1302,12 +1302,29 @@
     "@ethersproject/properties" ">=5.0.0-beta.131"
     bn.js "^4.4.0"
 
+"@ethersproject/bignumber@^5.0.0-beta.139":
+  version "5.0.0-beta.139"
+  resolved "https://registry.yarnpkg.com/@ethersproject/bignumber/-/bignumber-5.0.0-beta.139.tgz#12a4fa5a76ee90f77932326311caf04e1de1cae0"
+  integrity sha512-h1C1okCmPK3UVWwMGUbuCZykplJmD/TdknPQQHJWL/chK5MqBhyQ5o1Cay7mHXKCBnjWrR9BtwjfkAh76pYtFA==
+  dependencies:
+    "@ethersproject/bytes" ">=5.0.0-beta.137"
+    "@ethersproject/logger" ">=5.0.0-beta.137"
+    "@ethersproject/properties" ">=5.0.0-beta.140"
+    bn.js "^4.4.0"
+
 "@ethersproject/bytes@>=5.0.0-beta.129":
   version "5.0.0-beta.137"
   resolved "https://registry.yarnpkg.com/@ethersproject/bytes/-/bytes-5.0.0-beta.137.tgz#a9a35e2b358886289225d28212f4071ae391c161"
   integrity sha512-uBwchZzGP912Wcani6vM7RLtsnN69Uc9WTLvewsniKrpHpSx0/k33WUcQVosmkwPgUtqflKyGjcIqaea1Z9WHw==
   dependencies:
     "@ethersproject/logger" ">=5.0.0-beta.129"
+
+"@ethersproject/bytes@>=5.0.0-beta.137":
+  version "5.0.0-beta.138"
+  resolved "https://registry.yarnpkg.com/@ethersproject/bytes/-/bytes-5.0.0-beta.138.tgz#86e1f6c4016443f2b5236627fa656e7c56077a56"
+  integrity sha512-q4vaIthv89RJQ0V6gdzh1xuluJE1uYbnfzBUYTegicaXX6jRTCjDDhyiQhyEnNi7pKrGtuOrR3v3+7WtAR8Imw==
+  dependencies:
+    "@ethersproject/logger" ">=5.0.0-beta.137"
 
 "@ethersproject/constants@>=5.0.0-beta.128":
   version "5.0.0-beta.133"
@@ -1350,7 +1367,7 @@
     "@ethersproject/bytes" ">=5.0.0-beta.129"
     js-sha3 "0.5.7"
 
-"@ethersproject/logger@>=5.0.0-beta.129":
+"@ethersproject/logger@>=5.0.0-beta.129", "@ethersproject/logger@>=5.0.0-beta.137":
   version "5.0.0-beta.137"
   resolved "https://registry.yarnpkg.com/@ethersproject/logger/-/logger-5.0.0-beta.137.tgz#781582b8b04d0ced01e9c1608c9887d31d95b8ee"
   integrity sha512-H36iMhWOY+tco1+o2NZUdQT8Gc6Y9795RSPgvluatvjvyt3X6mHtWXes4F8Rc5N/95px++a/ODYVSkSmlr68+A==
@@ -1368,6 +1385,13 @@
   integrity sha512-IFMEWxWkx8ATeGtY56pnHXK40eJgfO9UeEsK/24Qzwyl5jA5Lhz6OoElaW3UG5LLupHmLoRuLyuG1WNg2olC3A==
   dependencies:
     "@ethersproject/logger" ">=5.0.0-beta.129"
+
+"@ethersproject/properties@>=5.0.0-beta.140":
+  version "5.0.0-beta.143"
+  resolved "https://registry.yarnpkg.com/@ethersproject/properties/-/properties-5.0.0-beta.143.tgz#604ba072ee91e386e1bfab70413c34165fa9c913"
+  integrity sha512-Stagr55S1G8g7edhv5kkHoVaaebYzwlutzYv7hWT2Ad+LPLIT7mkFf88DX8i0eWLQ8hBaSbCfKrc7uS6K7MdEw==
+  dependencies:
+    "@ethersproject/logger" ">=5.0.0-beta.137"
 
 "@ethersproject/providers@^5.0.0-beta.153", "@ethersproject/providers@^5.0.0-beta.164":
   version "5.0.0-beta.164"
@@ -2078,10 +2102,10 @@
   resolved "https://registry.yarnpkg.com/@uniswap/v2-core/-/v2-core-1.0.0.tgz#e0fab91a7d53e8cafb5326ae4ca18351116b0844"
   integrity sha512-BJiXrBGnN8mti7saW49MXwxDBRFiWemGetE58q8zgfnPPzQKq55ADltEILqOt6VFZ22kVeVKbF8gVd8aY3l7pA==
 
-"@uniswap/v2-periphery@1.0.0-beta.0":
-  version "1.0.0-beta.0"
-  resolved "https://registry.yarnpkg.com/@uniswap/v2-periphery/-/v2-periphery-1.0.0-beta.0.tgz#53ccbd5f6a3e43fd37f04660625873dc7d5c57b2"
-  integrity sha512-r0Iuk7L3gZzbmlZeNhMdLmG0fOqfHCoxmWqYQ9OX4r3w0lJ6dyErJ8kVdTy8PtairkuHkXWeH3OdyzzzBtyRpw==
+"@uniswap/v2-periphery@^1.1.0-beta.0":
+  version "1.1.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@uniswap/v2-periphery/-/v2-periphery-1.1.0-beta.0.tgz#20a4ccfca22f1a45402303aedb5717b6918ebe6d"
+  integrity sha512-6dkwAMKza8nzqYiXEr2D86dgW3TTavUvCR0w2Tu33bAbM8Ah43LKAzH7oKKPRT5VJQaMi1jtkGs1E8JPor1n5g==
   dependencies:
     "@uniswap/lib" "1.1.1"
     "@uniswap/v2-core" "1.0.0"
@@ -11371,10 +11395,10 @@ swarm-js@0.1.39:
     tar "^4.0.2"
     xhr-request-promise "^0.1.2"
 
-swr@0.1.18:
-  version "0.1.18"
-  resolved "https://registry.yarnpkg.com/swr/-/swr-0.1.18.tgz#be62df4cb8d188dc092305b35ecda1f3be8e61c1"
-  integrity sha512-lD31JxsD0bXdT7dyGVIB7MHcwgFp+HbBBOLt075hJT0sEgW01E3+EuCeB6fsavxZ2UjUZ3f+SbNMo9c8pv9uiA==
+swr@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/swr/-/swr-0.2.2.tgz#6e1b3e5c0e545c4fdb36ae3aa38cd94d0f9a88b7"
+  integrity sha512-D/z+PTUchZhoUA0tNC8TNJivf7Hc61WPxbUdXPi+VxRloddWYNP1ZicaEgyAph42ZnKl1L7twcZr4q6d0UMXcg==
   dependencies:
     fast-deep-equal "2.0.1"
 

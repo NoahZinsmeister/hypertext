@@ -3,9 +3,11 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
+import { PayableOverrides } from '@ethersproject/contracts'
+import { BigNumber } from '@ethersproject/bignumber'
 import { TradeType, TokenAmount, JSBI, WETH, Percent } from '@uniswap/sdk'
 import IERC20 from '@uniswap/v2-core/build/IERC20.json'
-import IUniswapV2Router01 from '@uniswap/v2-periphery/build/IUniswapV2Router01.json'
+import { abi as IUniswapV2Router02ABI } from '@uniswap/v2-periphery/build/IUniswapV2Router02.json'
 import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
 
 import AmountInput from '../components/AmountInput'
@@ -248,28 +250,28 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // function to perform the swap
   const [swapping, setSwapping] = useState(false)
   const inputToken = useContract(tokens[Field.INPUT]?.address, IERC20.abi, true)
-  const router = useContract(ROUTER_ADDRESS, IUniswapV2Router01.abi, true)
+  const router = useContract(ROUTER_ADDRESS, IUniswapV2Router02ABI, true)
   async function swap(): Promise<void> {
     setSwapping(true)
 
     async function innerSwap(mockGas = false): Promise<{ hash: string }> {
-      let routerFunction: any // eslint-disable-line @typescript-eslint/no-explicit-any
+      let routerFunctionNames: string[]
       let routerArguments: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
-      let routerOptions: object = mockGas ? { gasLimit: 500000 } : {}
+      let value: Required<PayableOverrides>['value'] = BigNumber.from(0)
       const deadline = Math.floor(Date.now() / 1000) + deadlineDelta
 
       if (trade.tradeType === TradeType.EXACT_INPUT) {
         if (tokens[Field.INPUT].equals(WETH[tokens[Field.INPUT].chainId])) {
-          routerFunction = router.swapExactETHForTokens
+          routerFunctionNames = ['swapExactETHForTokens', 'swapExactETHForTokensSupportingFeeOnTransferTokens']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
             route.path.map((token) => token.address),
             account,
             deadline,
           ]
-          routerOptions = { ...routerOptions, value: `0x${parsed[Field.INPUT].raw.toString(16)}` }
+          value = `0x${parsed[Field.INPUT].raw.toString(16)}`
         } else if (tokens[Field.OUTPUT].equals(WETH[tokens[Field.OUTPUT].chainId])) {
-          routerFunction = router.swapExactTokensForETH
+          routerFunctionNames = ['swapExactTokensForETH', 'swapExactTokensForETHSupportingFeeOnTransferTokens']
           routerArguments = [
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
@@ -278,7 +280,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             deadline,
           ]
         } else {
-          routerFunction = router.swapExactTokensForTokens
+          routerFunctionNames = ['swapExactTokensForTokens', 'swapExactTokensForTokensSupportingFeeOnTransferTokens']
           routerArguments = [
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
@@ -289,16 +291,16 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         }
       } else {
         if (tokens[Field.INPUT].equals(WETH[tokens[Field.INPUT].chainId])) {
-          routerFunction = router.swapETHForExactTokens
+          routerFunctionNames = ['swapETHForExactTokens']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
             route.path.map((token) => token.address),
             account,
             deadline,
           ]
-          routerOptions = { ...routerOptions, value: `0x${parsed[Field.INPUT].raw.toString(16)}` }
+          value = `0x${parsed[Field.INPUT].raw.toString(16)}`
         } else if (tokens[Field.OUTPUT].equals(WETH[tokens[Field.OUTPUT].chainId])) {
-          routerFunction = router.swapTokensForExactETH
+          routerFunctionNames = ['swapTokensForExactETH']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
@@ -307,7 +309,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             deadline,
           ]
         } else {
-          routerFunction = router.swapTokensForExactTokens
+          routerFunctionNames = ['swapTokensForExactTokens']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
@@ -318,7 +320,45 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         }
       }
 
-      return routerFunction(...routerArguments, routerOptions)
+      const estimatedGasLimits: BigNumber[] = await Promise.all(
+        routerFunctionNames.map(async (routerFunctionName) => {
+          if (mockGas) return Promise.resolve(BigNumber.from(500000))
+          return router.estimateGas[routerFunctionName](...routerArguments, { value }).catch((error: Error) => {
+            console.log(`Could not estimateGas for ${routerFunctionName}.`)
+            console.error(error)
+            return null
+          })
+        })
+      )
+
+      const indexOfSuccessfulEstimation = estimatedGasLimits.findIndex((estimatedGasLimit) =>
+        BigNumber.isBigNumber(estimatedGasLimit)
+      )
+
+      if (indexOfSuccessfulEstimation === -1) {
+        if (routerFunctionNames.length === 1) {
+          console.log(
+            "If you're trying to swap a token that takes a transfer fee, you must specify an exact input amount."
+          )
+        } else {
+          console.log(
+            "If you're trying to swap a token that takes a transfer fee, ensure your slippage tolerance is higher than the fee."
+          )
+        }
+        throw Error()
+      } else {
+        const routerFunctionName = routerFunctionNames[indexOfSuccessfulEstimation]
+        const gasLimit = estimatedGasLimits[indexOfSuccessfulEstimation].mul(105).div(100)
+        return router[routerFunctionName](...routerArguments, { value, gasLimit }).catch((error) => {
+          if (error?.code === 4001) {
+            console.log(`Transaction rejected for ${routerFunctionName}.`)
+          } else {
+            console.log(`Transaction failed for ${routerFunctionName}.`)
+            console.error(error)
+          }
+          throw Error()
+        })
+      }
     }
 
     let approved = JSBI.greaterThanOrEqual(allowance.raw, parsed[Field.INPUT].raw)
@@ -326,7 +366,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     if (!approved) {
       await inputToken
         .approve(ROUTER_ADDRESS, `0x${(approveMax ? MAX_UINT256 : parsed[Field.INPUT].raw).toString(16)}`)
-        .then(async ({ hash }) => {
+        .then(({ hash }) => {
           addTransaction(chainId, hash)
           approved = true
           mockGas = true
@@ -337,7 +377,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     }
 
     if (approved) {
-      await innerSwap(mockGas)
+      return innerSwap(mockGas)
         .then(({ hash }) => {
           addTransaction(chainId, hash)
           dispatch({

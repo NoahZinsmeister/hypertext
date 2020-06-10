@@ -6,10 +6,10 @@ export const COLOR = { light: 'black', dark: 'white' }
 export const ADDRESS_ZERO = '0x0000000000000000000000000000000000000000'
 
 export const DEFAULT_APPROVE_MAX = true
-export const DEFAULT_DEADLINE = 60 * 15
+export const DEFAULT_DEADLINE = 60 * 20
 export const DEFAULT_SLIPPAGE = 50
 
-export const ROUTER_ADDRESS = '0xf164fC0Ec4E93095b804a4795bBe1e041497b92a'
+export const ROUTER_ADDRESS = '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D'
 export const ZERO = JSBI.BigInt(0)
 export const MAX_UINT256 = JSBI.BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff')
 
