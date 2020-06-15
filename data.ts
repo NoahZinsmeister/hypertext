@@ -185,7 +185,7 @@ async function getRemoteTokens(searchQuery: string): Promise<RemoteToken[]> {
   const { request } = await import('graphql-request')
 
   return request(
-    'https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2',
+    'https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v2',
     `
 query getRemoteTokens($searchQuery: String!) {
   tokens(where: { symbol_contains: $searchQuery }) {
