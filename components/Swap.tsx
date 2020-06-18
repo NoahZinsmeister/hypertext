@@ -3,9 +3,12 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
-import { PayableOverrides } from '@ethersproject/contracts'
+import { PayableOverrides, Contract } from '@ethersproject/contracts'
 import { BigNumber } from '@ethersproject/bignumber'
 import { TradeType, TokenAmount, JSBI, WETH, Percent } from '@uniswap/sdk'
+import { hexDataSlice } from '@ethersproject/bytes'
+import { id } from '@ethersproject/hash'
+import { defaultAbiCoder } from '@ethersproject/abi'
 import IERC20 from '@uniswap/v2-core/build/IERC20.json'
 import { abi as IUniswapV2Router02ABI } from '@uniswap/v2-periphery/build/IUniswapV2Router02.json'
 import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
@@ -15,9 +18,17 @@ import TokenSelect from '../components/TokenSelect'
 import { useTokenByAddressAndAutomaticallyAdd } from '../tokens'
 import { useRoute, useContract, useQueryParameters, useTrade } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
-import { ROUTER_ADDRESS, ZERO, MAX_UINT256, QueryParameters } from '../constants'
+import {
+  ROUTER_ADDRESS,
+  ZERO,
+  MAX_UINT256,
+  QueryParameters,
+  PERMIT_AND_CALL_ADDRESS,
+  GAS_LIMIT_WHEN_MOCKING,
+} from '../constants'
 import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
 import TradeSummary from '../components/TradeSummary'
+import { canPermit, gatherPermit, Permit } from '../permits'
 
 enum Field {
   INPUT,
@@ -122,7 +133,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   const queryParameters = useQueryParameters()
 
-  const { account, chainId } = useWeb3React()
+  const { account, chainId, library } = useWeb3React()
 
   const [approveMax] = useApproveMax()
   const [deadlineDelta] = useDeadline()
@@ -224,6 +235,13 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     ? new TokenAmount(WETH[tokens[Field.INPUT].chainId], MAX_UINT256)
     : _allowance
 
+  // get permitAndCall allowance if the input token supports permit
+  const { data: permitAndCallAllowance } = useTokenAllowance(
+    canPermit(tokens[Field.INPUT]) ? tokens[Field.INPUT] : undefined,
+    account,
+    PERMIT_AND_CALL_ADDRESS
+  )
+
   // get input balance for validation purposes
   const ETHBalance = useETHBalance(account)
   const _balance = useTokenBalance(tokens[Field.INPUT], account)
@@ -254,11 +272,10 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   async function swap(): Promise<void> {
     setSwapping(true)
 
-    async function innerSwap(mockGas = false): Promise<{ hash: string }> {
+    async function innerSwap(deadline: number, mockGas = false, permit?: Permit): Promise<{ hash: string }> {
       let routerFunctionNames: string[]
       let routerArguments: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
-      let value: Required<PayableOverrides>['value'] = BigNumber.from(0)
-      const deadline = Math.floor(Date.now() / 1000) + deadlineDelta
+      let value: Required<PayableOverrides>['value'] = 0
 
       if (trade.tradeType === TradeType.EXACT_INPUT) {
         if (tokens[Field.INPUT].equals(WETH[tokens[Field.INPUT].chainId])) {
@@ -320,75 +337,169 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         }
       }
 
-      const estimatedGasLimits: BigNumber[] = await Promise.all(
-        routerFunctionNames.map(async (routerFunctionName) => {
-          if (mockGas) return Promise.resolve(BigNumber.from(500000))
-          return router.estimateGas[routerFunctionName](...routerArguments, { value }).catch((error: Error) => {
-            console.log(`Could not estimateGas for ${routerFunctionName}.`)
-            console.error(error)
-            return null
-          })
-        })
-      )
-
-      const indexOfSuccessfulEstimation = estimatedGasLimits.findIndex((estimatedGasLimit) =>
-        BigNumber.isBigNumber(estimatedGasLimit)
-      )
-
-      if (indexOfSuccessfulEstimation === -1) {
-        if (routerFunctionNames.length === 1) {
-          console.log(
-            "If you're trying to swap a token that takes a transfer fee, you must specify an exact input amount."
-          )
-        } else {
-          console.log(
-            "If you're trying to swap a token that takes a transfer fee, ensure your slippage tolerance is higher than the fee."
-          )
-        }
-        throw Error()
-      } else {
-        const routerFunctionName = routerFunctionNames[indexOfSuccessfulEstimation]
-        const gasLimit = estimatedGasLimits[indexOfSuccessfulEstimation].mul(105).div(100)
-        return router[routerFunctionName](...routerArguments, { value, gasLimit }).catch((error) => {
-          if (error?.code === 4001) {
-            console.log(`Transaction rejected for ${routerFunctionName}.`)
-          } else {
-            console.log(`Transaction failed for ${routerFunctionName}.`)
-            console.error(error)
+      // we have an approve tx pending
+      if (mockGas) {
+        // because we can't estimate gas, as it will fail b/c of the approve, we are forced to use the first function
+        const routerFunctionName = routerFunctionNames[0]
+        return await router[routerFunctionName](...routerArguments, { value, gasLimit: GAS_LIMIT_WHEN_MOCKING }).catch(
+          (error) => {
+            if (error?.code !== 4001) {
+              console.log(`${routerFunctionName} failed with a mocked gas limit.`)
+            }
+            throw error
           }
-          throw Error()
-        })
+        )
+      }
+
+      // we have permit data
+      if (permit) {
+        const permitAndCall = new Contract(
+          PERMIT_AND_CALL_ADDRESS,
+          [
+            'function permitAndCall(address token, uint256 value, bytes4 permitSelector, bytes calldata permitData, bytes4 routerFunctionSelector, bytes calldata routerFunctionData)',
+          ],
+          library.getSigner(account).connectUnchecked()
+        )
+
+        // try to get a gas limit for each function name in turn
+        for (const routerFunctionName of routerFunctionNames) {
+          const routerFunctionFragment = router.interface.fragments.filter(({ name }) => name === routerFunctionName)[0]
+          const routerFunctionSelector = hexDataSlice(
+            id(`${routerFunctionName}(${routerFunctionFragment.inputs.map(({ type }) => type).join(',')})`),
+            0,
+            4
+          )
+          const permitAndCallArguments = [
+            tokens[Field.INPUT].address,
+            `0x${parsed[Field.INPUT].raw.toString(16)}`,
+            permit.permitSelector,
+            permit.permitData,
+            routerFunctionSelector,
+            defaultAbiCoder.encode(routerFunctionFragment.inputs, routerArguments),
+          ]
+          const gasLimit: BigNumber | void = await permitAndCall.estimateGas
+            .permitAndCall(...permitAndCallArguments, { value })
+            .then((gasLimit) => gasLimit.mul(105).div(100))
+            .catch(() => {
+              console.log(`estimateGas failed for ${routerFunctionName} via permitAndCall.`)
+            })
+          if (BigNumber.isBigNumber(gasLimit)) {
+            return await permitAndCall
+              .permitAndCall(...permitAndCallArguments, {
+                value,
+                gasLimit,
+              })
+              .catch((error) => {
+                if (error?.code !== 4001) {
+                  console.log(`${routerFunctionName} failed via permitAndCall.`)
+                }
+                throw error
+              })
+          }
+        }
+        // if we're here, it means all estimateGas calls failed
+        console.log(
+          routerFunctionNames.length === 1
+            ? "If you're trying to swap a token that takes a transfer fee, you must specify an exact input amount."
+            : "If you're trying to swap a token that takes a transfer fee, ensure your slippage tolerance is higher than the fee."
+        )
+        throw Error()
+      }
+
+      // try to get a gas limit for each function name in turn
+      for (const routerFunctionName of routerFunctionNames) {
+        const gasLimit: BigNumber | void = await router.estimateGas[routerFunctionName](...routerArguments, { value })
+          .then((gasLimit) => gasLimit.mul(105).div(100))
+          .catch(() => {
+            console.log(`estimateGas failed for ${routerFunctionName}.`)
+          })
+        if (BigNumber.isBigNumber(gasLimit)) {
+          return await router[routerFunctionName](...routerArguments, { value, gasLimit }).catch((error) => {
+            if (error?.code !== 4001) {
+              console.log(`${routerFunctionName} failed.`)
+            }
+            throw error
+          })
+        }
+      }
+      // if we're here, it means all estimateGas calls failed
+      console.log(
+        routerFunctionNames.length === 1
+          ? "If you're trying to swap a token that takes a transfer fee, you must specify an exact input amount."
+          : "If you're trying to swap a token that takes a transfer fee, ensure your slippage tolerance is higher than the fee."
+      )
+      throw Error()
+    }
+
+    const deadline = Math.floor(Date.now() / 1000) + deadlineDelta
+    let approved = JSBI.greaterThanOrEqual(allowance.raw, parsed[Field.INPUT].raw)
+    let mockGas = false
+    let permit: Permit
+    if (!approved) {
+      let tryToManuallyApprove = true
+
+      // attempt to gather a permit signature where possible
+      if (canPermit(tokens[Field.INPUT])) {
+        // in the slightly weird case where the user has already approved PermitAndCall, just fake the permit
+        if (permitAndCallAllowance && JSBI.greaterThanOrEqual(permitAndCallAllowance.raw, parsed[Field.INPUT].raw)) {
+          approved = true
+          tryToManuallyApprove = false
+          permit = {
+            permitSelector: '0x00000000',
+            permitData: '0x',
+          }
+        } else {
+          await gatherPermit(account, deadline, approveMax, tokens[Field.INPUT], library)
+            .then((gatheredPermit) => {
+              approved = true
+              tryToManuallyApprove = false
+              permit = gatheredPermit
+            })
+            .catch((error) => {
+              // if the error code is 4001 (EIP-1193 user rejected request), we don't want to try a manual approve
+              if (error?.code === 4001) {
+                tryToManuallyApprove = false
+              } else {
+                console.log(`permit failed.`)
+              }
+            })
+        }
+      }
+
+      if (tryToManuallyApprove) {
+        await inputToken
+          .approve(ROUTER_ADDRESS, `0x${(approveMax ? MAX_UINT256 : parsed[Field.INPUT].raw).toString(16)}`)
+          .then(({ hash }) => {
+            addTransaction(chainId, hash)
+            approved = true
+            mockGas = true
+          })
+          .catch((error) => {
+            if (error?.code !== 4001) {
+              console.log(`approve failed.`)
+            }
+          })
       }
     }
 
-    let approved = JSBI.greaterThanOrEqual(allowance.raw, parsed[Field.INPUT].raw)
-    let mockGas = false
-    if (!approved) {
-      await inputToken
-        .approve(ROUTER_ADDRESS, `0x${(approveMax ? MAX_UINT256 : parsed[Field.INPUT].raw).toString(16)}`)
-        .then(({ hash }) => {
-          addTransaction(chainId, hash)
-          approved = true
-          mockGas = true
-        })
-        .catch(() => {
-          setSwapping(false)
-        })
-    }
-
     if (approved) {
-      return innerSwap(mockGas)
-        .then(({ hash }) => {
-          addTransaction(chainId, hash)
-          dispatch({
-            type: ActionType.TYPE,
-            payload: { field: independentField, value: '' },
+      return (
+        innerSwap(deadline, mockGas, permit)
+          .then(({ hash }) => {
+            addTransaction(chainId, hash)
+            dispatch({
+              type: ActionType.TYPE,
+              payload: { field: independentField, value: '' },
+            })
+            setSwapping(false)
           })
-          setSwapping(false)
-        })
-        .catch(() => {
-          setSwapping(false)
-        })
+          // we don't do anything with the error here, innerSwap is responsible for handling it
+          .catch(() => {
+            setSwapping(false)
+          })
+      )
+    } else {
+      setSwapping(false)
     }
   }
 

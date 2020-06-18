@@ -4,7 +4,7 @@ import { Token, Route, WETH, Pair, ChainId, TokenAmount, TradeType, Trade } from
 
 import { injected } from './connectors'
 import { useReserves, useBlockNumber } from './data'
-import { Contract } from '@ethersproject/contracts'
+import { Contract, ContractInterface } from '@ethersproject/contracts'
 import { useRouter } from 'next/router'
 import { QueryParameters } from './constants'
 import { getAddress } from '@ethersproject/address'
@@ -275,8 +275,7 @@ export function useTrade(
   return trade
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useContract(address?: string, ABI?: any, withSigner = false): Contract | undefined {
+export function useContract(address?: string, ABI?: ContractInterface, withSigner = false): Contract | undefined {
   const { library, account } = useWeb3React()
   return useMemo(
     () =>
