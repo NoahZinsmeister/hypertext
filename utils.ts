@@ -1,4 +1,7 @@
 import { JSBI, Fraction, Percent, Price, Token, WETH, ChainId } from '@uniswap/sdk'
+import { UrlObject } from 'url'
+
+import { isIPFS } from './constants'
 
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions#Escaping
 export function escapeRegExp(string: string): string {
@@ -83,4 +86,23 @@ export function getPercentChange(referenceRate: Price, newRate: Price, flipOrder
   )
   const percentChange = difference.multiply(referenceRate.adjusted.invert())
   return new Percent(percentChange.numerator, percentChange.denominator)
+}
+
+export function modifyUrlObjectForIPFS(
+  url: string | UrlObject
+): {
+  href: UrlObject
+  as: UrlObject
+} {
+  const parsedUrl = typeof url === 'string' ? { pathname: url } : url
+  const { pathname, ...rest } = parsedUrl
+  const modifiedPathname = pathname === '/' ? './' : `.${pathname}${isIPFS ? '.html' : ''}`
+
+  return {
+    href: parsedUrl,
+    as: {
+      ...rest,
+      pathname: modifiedPathname,
+    },
+  }
 }

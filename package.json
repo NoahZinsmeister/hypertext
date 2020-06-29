@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && next export",
+    "build-ipfs": "IPFS=true next build && next export",
     "prettier": "prettier --check \"**/*.{js,jsx,ts,tsx}\""
   },
   "dependencies": {

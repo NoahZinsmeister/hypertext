@@ -32,24 +32,21 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
   const requiredChainId = queryParameters[QueryParameters.CHAIN]
 
   return !painted ? null : (
-    <>
-      <Base />
-      <ColorModeProvider>
-        <Favicon />
-        <Provider>
-          <Layout>
-            {error ? (
-              <Error />
-            ) : typeof chainId !== 'number' ? null : typeof requiredChainId === 'number' &&
-              chainId !== requiredChainId ? (
-              <SwitchToChain requiredChainId={requiredChainId} />
-            ) : (
-              <Component />
-            )}
-          </Layout>
-        </Provider>
-      </ColorModeProvider>
-    </>
+    <ColorModeProvider>
+      <Favicon />
+      <Provider>
+        <Layout>
+          {error ? (
+            <Error />
+          ) : typeof chainId !== 'number' ? null : typeof requiredChainId === 'number' &&
+            chainId !== requiredChainId ? (
+            <SwitchToChain requiredChainId={requiredChainId} />
+          ) : (
+            <Component />
+          )}
+        </Layout>
+      </Provider>
+    </ColorModeProvider>
   )
 }
 
@@ -63,6 +60,7 @@ export default class App extends NextApp {
     const { Component } = this.props
     return (
       <>
+        <Base />
         <Head>
           <title key="title">Hypertext</title>
           <meta key="description" name="Description" content="A text-forward Uniswap interface." />

@@ -29,6 +29,7 @@ import {
 import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
 import TradeSummary from '../components/TradeSummary'
 import { canPermit, gatherPermit, Permit } from '../permits'
+import { modifyUrlObjectForIPFS } from '../utils'
 
 enum Field {
   INPUT,
@@ -519,13 +520,13 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         {!!!trade ? (
           <Link
-            href={{
+            {...modifyUrlObjectForIPFS({
               pathname: buy ? '/sell' : '/buy',
               query: {
                 ...(tokens[Field.INPUT]?.address ? { [QueryParameters.INPUT]: tokens[Field.INPUT]?.address } : {}),
                 ...(tokens[Field.OUTPUT]?.address ? { [QueryParameters.OUTPUT]: tokens[Field.OUTPUT]?.address } : {}),
               },
-            }}
+            })}
             passHref
           >
             <Button

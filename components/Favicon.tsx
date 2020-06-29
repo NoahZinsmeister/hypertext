@@ -5,7 +5,7 @@ export default function Favicon(): JSX.Element {
   const { colorMode } = useColorMode()
   return (
     <Head>
-      <link key="favicon" rel="icon" href={`/favicon${colorMode === 'dark' ? '-dark' : ''}.ico`} />
+      <link key="favicon" rel="icon" href={`./favicon${colorMode === 'dark' ? '-dark' : ''}.ico`} />
     </Head>
   )
 }
