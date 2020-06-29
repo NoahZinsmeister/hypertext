@@ -1,4 +1,4 @@
-name: CI
+name: CI-CD
 
 on:
   push:
@@ -24,6 +24,7 @@ jobs:
       - run: yarn build
 
   deploy:
+    if: github.event_name == 'push'
     needs: test
 
     runs-on: ubuntu-latest
@@ -43,7 +44,7 @@ jobs:
           service: pinata
           pinataKey: ${{ secrets.PINATA_API_KEY }}
           pinataSecret: ${{ secrets.PINATA_SECRET_API_KEY }}
-      # - run: node --experimental-modules update-dnslink.mjs
-      #   env:
-      #     VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      #     IPFS_HASH: ${{ steps.upload.outputs.hash }}
+      - run: node --experimental-modules update-dnslink.mjs
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          IPFS_HASH: ${{ steps.upload.outputs.hash }}

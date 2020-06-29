@@ -56,7 +56,7 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
           }),
     }
     permalink = resolve(
-      document.baseURI,
+      'https://hypertext.finance',
       `${pathname}?${Object.keys(permalinkParameters)
         .map((key) => `${key}=${permalinkParameters[key]}`)
         .join('&')}`

@@ -226,7 +226,8 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // clear url params
   useEffect(() => {
     if (Object.keys(query).length > 0) {
-      replace(pathname, undefined, { shallow: true })
+      const { href, as } = modifyUrlObjectForIPFS(pathname)
+      replace(href, as, { shallow: true })
     }
   })
 

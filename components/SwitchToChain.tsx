@@ -1,10 +1,12 @@
 import { Flex, Button, Stack, Text } from '@chakra-ui/core'
 import { useRouter } from 'next/router'
 
-import { CHAIN_ID_NAMES } from '../utils'
+import { CHAIN_ID_NAMES, modifyUrlObjectForIPFS } from '../utils'
 
 export default function SwitchToChain({ requiredChainId }: { requiredChainId: number }): JSX.Element {
   const { pathname, push } = useRouter()
+
+  const { href, as } = modifyUrlObjectForIPFS(pathname)
 
   return (
     <Flex flexGrow={1} alignItems="center" justifyContent="center">
@@ -17,7 +19,7 @@ export default function SwitchToChain({ requiredChainId }: { requiredChainId: nu
         <Button
           width="min-content"
           onClick={(): void => {
-            push(pathname, undefined, { shallow: true })
+            push(href, as, { shallow: true })
           }}
         >
           Here by mistake?
