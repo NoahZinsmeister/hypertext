@@ -346,7 +346,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         return await router[routerFunctionName](...routerArguments, { value, gasLimit: GAS_LIMIT_WHEN_MOCKING }).catch(
           (error) => {
             if (error?.code !== 4001) {
-              console.log(`${routerFunctionName} failed with a mocked gas limit.`)
+              console.log(`${routerFunctionName} failed with a mocked gas limit.`, error)
             }
             throw error
           }
@@ -382,8 +382,8 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
           const gasLimit: BigNumber | void = await permitAndCall.estimateGas
             .permitAndCall(...permitAndCallArguments, { value })
             .then((gasLimit) => gasLimit.mul(105).div(100))
-            .catch(() => {
-              console.log(`estimateGas failed for ${routerFunctionName} via permitAndCall.`)
+            .catch((error) => {
+              console.log(`estimateGas failed for ${routerFunctionName} via permitAndCall.`, error)
             })
           if (BigNumber.isBigNumber(gasLimit)) {
             return await permitAndCall
@@ -393,7 +393,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
               })
               .catch((error) => {
                 if (error?.code !== 4001) {
-                  console.log(`${routerFunctionName} failed via permitAndCall.`)
+                  console.log(`${routerFunctionName} failed via permitAndCall.`, error)
                 }
                 throw error
               })
@@ -412,13 +412,13 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
       for (const routerFunctionName of routerFunctionNames) {
         const gasLimit: BigNumber | void = await router.estimateGas[routerFunctionName](...routerArguments, { value })
           .then((gasLimit) => gasLimit.mul(105).div(100))
-          .catch(() => {
-            console.log(`estimateGas failed for ${routerFunctionName}.`)
+          .catch((error) => {
+            console.log(`estimateGas failed for ${routerFunctionName}.`, error)
           })
         if (BigNumber.isBigNumber(gasLimit)) {
           return await router[routerFunctionName](...routerArguments, { value, gasLimit }).catch((error) => {
             if (error?.code !== 4001) {
-              console.log(`${routerFunctionName} failed.`)
+              console.log(`${routerFunctionName} failed.`, error)
             }
             throw error
           })
@@ -462,7 +462,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
               if (error?.code === 4001) {
                 tryToManuallyApprove = false
               } else {
-                console.log(`permit failed.`)
+                console.log(`permit failed.`, error)
               }
             })
         }
@@ -478,7 +478,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
           })
           .catch((error) => {
             if (error?.code !== 4001) {
-              console.log(`approve failed.`)
+              console.log(`approve failed.`, error)
             }
           })
       }
@@ -568,7 +568,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         <AmountInput
           controlled={independentField === (buy ? Field.OUTPUT : Field.INPUT)}
-          isDisabled={isInvalidRoute || swapping}
+          isDisabled={swapping}
           isInvalid={isInvalidTrade}
           value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
           onChange={(value): void => {
@@ -613,7 +613,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         <AmountInput
           controlled={independentField === (buy ? Field.INPUT : Field.OUTPUT)}
-          isDisabled={isInvalidRoute || swapping}
+          isDisabled={swapping}
           isInvalid={isInvalidBalance}
           value={formatted[buy ? Field.INPUT : Field.OUTPUT]}
           onChange={(value): void => {

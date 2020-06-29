@@ -2,9 +2,11 @@ import { useState, useEffect, Suspense } from 'react'
 import { Button, Stack, Box, IconButton } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { useWeb3React } from '@web3-react/core'
+import { NoEthereumProviderError, UserRejectedRequestError } from '@web3-react/injected-connector'
+import { UserRejectedRequestError as UserRejectedRequestErrorWalletconnect } from '@web3-react/walletconnect-connector'
 
 import { formatEtherscanLink, EtherscanType, shortenHex } from '../utils'
-import { injected, getNetwork } from '../connectors'
+import { injected, getNetwork, walletconnect } from '../connectors'
 import { useETHBalance } from '../data'
 import { useEagerConnect, useQueryParameters } from '../hooks'
 import { QueryParameters } from '../constants'
@@ -30,7 +32,7 @@ function ETHBalance(): JSX.Element {
 }
 
 export default function Account(): JSX.Element {
-  const { active, error, activate, library, chainId, account } = useWeb3React<Web3Provider>()
+  const { active, error, activate, library, chainId, account, setError } = useWeb3React<Web3Provider>()
 
   // automatically try connecting to the injected connected where applicable
   const tried = useEagerConnect()
@@ -82,7 +84,26 @@ export default function Account(): JSX.Element {
           isLoading={connecting}
           onClick={(): void => {
             setConnecting(true)
-            activate(injected)
+            activate(injected, undefined, true).catch((error) => {
+              // ignore the error if it's a user rejected request
+              if (error instanceof UserRejectedRequestError) {
+                setConnecting(false)
+              } else if (error instanceof NoEthereumProviderError) {
+                // reset the connector if it was tried already
+                if (walletconnect?.walletConnectProvider?.wc?.uri) {
+                  walletconnect.walletConnectProvider = undefined
+                }
+                activate(walletconnect, undefined, true).catch((error) => {
+                  if (error instanceof UserRejectedRequestErrorWalletconnect) {
+                    setConnecting(false)
+                  } else {
+                    setError(error)
+                  }
+                })
+              } else {
+                setError(error)
+              }
+            })
           }}
         >
           Connect Wallet
