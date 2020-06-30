@@ -93,6 +93,7 @@ const HypertextContext = createContext<
     {
       firstToken: Token
       secondToken: Token
+      showUSD: boolean
       approveMax: boolean
       deadline: number
       slippage: number
@@ -102,6 +103,7 @@ const HypertextContext = createContext<
     {
       setFirstToken: Dispatch<SetStateAction<Token>>
       setSecondToken: Dispatch<SetStateAction<Token>>
+      setShowUSD: Dispatch<SetStateAction<boolean>>
       setApproveMax: Dispatch<SetStateAction<boolean>>
       setDeadline: Dispatch<SetStateAction<number>>
       setSlippage: Dispatch<SetStateAction<number>>
@@ -120,6 +122,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
   // global state
   const [firstToken, setFirstToken] = useState<Token>()
   const [secondToken, setSecondToken] = useState<Token>()
+  const [showUSD, setShowUSD] = useState<boolean>(false)
 
   // versioning
   const [version, setVersion] = useLocalStorage<number>(LocalStorageKeys.Version, NO_VERSION)
@@ -151,10 +154,11 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
     <HypertextContext.Provider
       value={useMemo(
         () => [
-          { firstToken, secondToken, approveMax, deadline, slippage, transactions, tokens },
+          { firstToken, secondToken, showUSD, approveMax, deadline, slippage, transactions, tokens },
           {
             setFirstToken,
             setSecondToken,
+            setShowUSD,
             setApproveMax,
             setDeadline,
             setSlippage,
@@ -165,6 +169,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
         [
           firstToken,
           secondToken,
+          showUSD,
           approveMax,
           deadline,
           slippage,
@@ -172,6 +177,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
           tokens,
           setFirstToken,
           setSecondToken,
+          setShowUSD,
           setApproveMax,
           setDeadline,
           setSlippage,
@@ -193,6 +199,11 @@ export function useFirstToken(): [Token, ReturnType<typeof useHypertextContext>[
 export function useSecondToken(): [Token, ReturnType<typeof useHypertextContext>[1]['setSecondToken']] {
   const [{ secondToken }, { setSecondToken }] = useHypertextContext()
   return [secondToken, setSecondToken]
+}
+
+export function useShowUSD(): [boolean, ReturnType<typeof useHypertextContext>[1]['setShowUSD']] {
+  const [{ showUSD }, { setShowUSD }] = useHypertextContext()
+  return [showUSD, setShowUSD]
 }
 
 export function useApproveMax(): [boolean, () => void] {

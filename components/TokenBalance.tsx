@@ -8,11 +8,16 @@ import { BG } from '../constants'
 import { useTokenBalance } from '../data'
 import TokenLogo from './TokenLogo'
 import ErrorBoundary from './ErrorBoundary'
+import { useShowUSD } from '../context'
+import { useUSDTokenPrice } from '../hooks'
 
 function Balance({ token }: { token: Token }): JSX.Element {
   const { colorMode } = useColorMode()
   const { account } = useWeb3React()
   const { data } = useTokenBalance(token, account, true)
+
+  const [showUSD] = useShowUSD()
+  const USDTokenPrice = useUSDTokenPrice(token)
 
   return (
     <Button
@@ -27,7 +32,11 @@ function Balance({ token }: { token: Token }): JSX.Element {
       }}
     >
       <TokenLogo token={token} size="1.5rem" />
-      <Text ml="0.5rem">{data.toSignificant(6, { groupSeparator: ',' })}</Text>
+      <Text ml="0.5rem">
+        {showUSD && USDTokenPrice
+          ? `$${data.multiply(USDTokenPrice).toFixed(2, { groupSeparator: ',' })}`
+          : data.toSignificant(6, { groupSeparator: ',' })}
+      </Text>
     </Button>
   )
 }
