@@ -88,7 +88,9 @@ export default function Account(): JSX.Element {
               // ignore the error if it's a user rejected request
               if (error instanceof UserRejectedRequestError) {
                 setConnecting(false)
-              } else if (error instanceof NoEthereumProviderError) {
+              }
+              // try connecting to walletconnect if there was no injected provider and we're on mainnet
+              else if (error instanceof NoEthereumProviderError && chainId === 1) {
                 // reset the connector if it was tried already
                 if (walletconnect?.walletConnectProvider?.wc?.uri) {
                   walletconnect.walletConnectProvider = undefined
