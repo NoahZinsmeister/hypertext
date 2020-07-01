@@ -61,6 +61,8 @@ export function TokenLogoColor({
       !BROKEN[token.chainId]?.[token.address] &&
       !SWATCHES[token.chainId]?.[token.address]
     ) {
+      let stale = false
+
       import('node-vibrant').then(({ default: Vibrant }) =>
         Vibrant.from(
           `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${token.address}/logo.png`
@@ -74,7 +76,9 @@ export function TokenLogoColor({
                 [token.address]: palette.Vibrant,
               },
             }
-            setDummy((dummy) => dummy + 1)
+            if (!stale) {
+              setDummy((dummy) => dummy + 1)
+            }
           })
           .catch(() => {
             BROKEN = {
@@ -84,9 +88,15 @@ export function TokenLogoColor({
                 [token.address]: true,
               },
             }
-            setDummy((dummy) => dummy + 1)
+            if (!stale) {
+              setDummy((dummy) => dummy + 1)
+            }
           })
       )
+
+      return () => {
+        stale = true
+      }
     }
   }, [token])
 
