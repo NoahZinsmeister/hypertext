@@ -19,12 +19,10 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
   const isTestnet = typeof chainId === 'number' && chainId !== 1
 
   const { isOpen: isOpenSettings, onOpen: onOpenSettings, onClose: onCloseSettings } = useDisclosure()
-  useBodyKeyDown('s', onOpenSettings, isOpenSettings)
 
   const [firstToken] = useFirstToken()
   const [secondToken] = useSecondToken()
   const [showUSD, setShowUSD] = useShowUSD()
-  useBodyKeyDown('u', () => setShowUSD((showUSD) => !showUSD))
 
   const [transactions] = useTransactions()
 
