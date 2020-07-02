@@ -1657,12 +1657,12 @@
   resolved "https://registry.yarnpkg.com/@ledgerhq/logs/-/logs-4.72.0.tgz#43df23af013ad1135407e5cf33ca6e4c4c7708d5"
   integrity sha512-o+TYF8vBcyySRsb2kqBDv/KMeme8a2nwWoG+lAWzbDmWfb2/MrVWYCVYDYvjXdSoI/Cujqy1i0gIDrkdxa9chA==
 
-"@metamask/onboarding@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@metamask/onboarding/-/onboarding-0.4.0.tgz#addecd4de988e178495cd64467807c6a2c793894"
-  integrity sha512-vowfzGEsOK3Z38uTwdiQclnqnt0aKwdaHUojgTVrFDEbIp4LDMC9wx/3oUNDBFcBKF8qS/CEaVmYOIw66oP9Pg==
+"@metamask/onboarding@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@metamask/onboarding/-/onboarding-1.0.0.tgz#500c65b58d1e09419b049638024db040cce30dc6"
+  integrity sha512-GnR1Sv87plYM58RYRC7V04oo52JEL4zDmgoLKLdjr59ma60lK6LzZz3k9uJscqUAfwtgKurXHz2Hx5r2oBC6vQ==
   dependencies:
-    bowser "^2.5.4"
+    bowser "^2.9.0"
     tslib "^1.11.0"
 
 "@next/react-dev-overlay@9.4.4":
@@ -3683,7 +3683,7 @@ boolbase@^1.0.0, boolbase@~1.0.0:
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
   integrity sha1-aN/1++YMUes3cl6p4+0xDcwed24=
 
-bowser@^2.5.4:
+bowser@^2.9.0:
   version "2.9.0"
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-2.9.0.tgz#3bed854233b419b9a7422d9ee3e85504373821c9"
   integrity sha512-2ld76tuLBNFekRgmJfT2+3j5MIrP6bFict8WAIT3beq+srz1gcKNAdNKMqHqauQt63NmAa88HfP1/Ypa9Er3HA==
