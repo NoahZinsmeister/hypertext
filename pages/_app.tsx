@@ -18,6 +18,7 @@ import SwitchToChain from '../components/SwitchToChain'
 import '../styles.css'
 import '@reach/combobox/styles.css'
 import { QueryParameters } from '../constants'
+import Loading from '../components/Loading'
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
@@ -38,8 +39,9 @@ function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Ele
         <Layout>
           {error ? (
             <Error />
-          ) : typeof chainId !== 'number' ? null : typeof requiredChainId === 'number' &&
-            chainId !== requiredChainId ? (
+          ) : typeof chainId !== 'number' ? (
+            <Loading />
+          ) : typeof requiredChainId === 'number' && chainId !== requiredChainId ? (
             <SwitchToChain requiredChainId={requiredChainId} />
           ) : (
             <Component />
