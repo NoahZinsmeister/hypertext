@@ -54,6 +54,7 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
   useEffect(() => {
     if (active || error) {
       setConnecting(false)
+      onboarding.current.stopOnboarding()
     }
   }, [active, error])
 
