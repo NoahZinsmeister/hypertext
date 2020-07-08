@@ -113,10 +113,11 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
   }
 
   let leftIcon: string
-  if (MetaMaskOnboarding.isMetaMaskInstalled()) {
-    leftIcon = 'metamask'
-  } else if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
+  // check walletconnect first because sometime metamask can be installed but we're still using walletconnect
+  if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
     leftIcon = 'walletconnect'
+  } else if (MetaMaskOnboarding.isMetaMaskInstalled()) {
+    leftIcon = 'metamask'
   }
 
   return (
