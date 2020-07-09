@@ -18,7 +18,7 @@ export default function AmountInput({
   value: string
   onChange: (value: string) => void
 }): JSX.Element {
-  const ref = useRef<HTMLInputElement>()
+  const ref = useRef<HTMLInputElement>(null)
   useLayoutEffect(() => {
     if (ref.current) ref.current.size = Math.max(1, value.length)
   })
@@ -41,7 +41,7 @@ export default function AmountInput({
         cursor: 'not-allowed',
       }}
       isInvalid={isInvalid}
-      borderColor={!isInvalid && 'transparent !important'}
+      borderColor={!isInvalid ? 'transparent !important' : undefined}
       isRequired={true}
       variant="flushed"
       fontSize="3xl"

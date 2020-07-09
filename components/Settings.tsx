@@ -41,7 +41,7 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
   const [firstToken] = useFirstToken()
   const [secondToken] = useSecondToken()
 
-  let permalink = null
+  let permalink: string | null = null
   if (typeof chainId === 'number' && (firstToken || secondToken) && (pathname === '/buy' || pathname === '/sell')) {
     const permalinkParameters = {
       [QueryParameters.CHAIN]: chainId,
@@ -57,8 +57,8 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
     }
     permalink = resolve(
       'https://hypertext.finance',
-      `${pathname}?${Object.keys(permalinkParameters)
-        .map((key) => `${key}=${permalinkParameters[key]}`)
+      `${pathname}?${Object.entries(permalinkParameters)
+        .map(([key, value]) => `${key}=${value}`)
         .join('&')}`
     )
   }
@@ -148,7 +148,7 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
           </Stack>
         </ModalBody>
         <ModalFooter justifyContent={permalink === null ? 'flex-end' : 'space-between'}>
-          {permalink !== null && (
+          {typeof permalink === 'string' && (
             <Button
               variant="link"
               isDisabled={copied}
@@ -159,7 +159,7 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
                   // eslint-disable-next-line
                   ;(window.navigator as any).share({ title: 'Hypertext', url: permalink }).catch(() => {})
                 } catch {
-                  copyWithFlag(permalink)
+                  copyWithFlag(permalink as string)
                 }
               }}
             >
@@ -173,7 +173,7 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
             rel="noopener noreferrer"
             color="blue.500"
           >
-            {process.env.COMMIT_SHA.slice(0, 7)}
+            {process.env.COMMIT_SHA?.slice(0, 7)}
           </Link>
         </ModalFooter>
       </ModalContent>

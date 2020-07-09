@@ -5,7 +5,7 @@ import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { PayableOverrides, Contract } from '@ethersproject/contracts'
 import { BigNumber } from '@ethersproject/bignumber'
-import { TradeType, TokenAmount, JSBI, WETH, Percent } from '@uniswap/sdk'
+import { TradeType, TokenAmount, JSBI, WETH, Percent, Token, Route } from '@uniswap/sdk'
 import { hexDataSlice } from '@ethersproject/bytes'
 import { id } from '@ethersproject/hash'
 import { defaultAbiCoder } from '@ethersproject/abi'
@@ -30,6 +30,10 @@ import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken
 import TradeSummary from '../components/TradeSummary'
 import { canPermit, gatherPermit, Permit } from '../permits'
 import { modifyUrlObjectForIPFS } from '../utils'
+
+interface ErrorWithCode extends Error {
+  code?: number
+}
 
 enum Field {
   INPUT,
@@ -182,9 +186,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   const parsed: { [field: number]: TokenAmount } = {}
   if (value !== '' && value !== '.' && tokens[independentField]) {
     try {
-      const valueParsed = parseUnits(value, tokens[independentField].decimals).toString()
+      const valueParsed = parseUnits(value, tokens[independentField]?.decimals).toString()
       if (valueParsed !== '0') {
-        parsed[independentField] = new TokenAmount(tokens[independentField], valueParsed)
+        parsed[independentField] = new TokenAmount(tokens[independentField] as Token, valueParsed)
       }
     } catch {
       // should only fail if the user specifies too many decimal places of precision (or maybe exceed max uint?)
@@ -233,8 +237,8 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   // get input allowance for validation purposes
   const { data: _allowance } = useTokenAllowance(tokens[Field.INPUT], account, ROUTER_ADDRESS)
-  const allowance = tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId])
-    ? new TokenAmount(WETH[tokens[Field.INPUT].chainId], MAX_UINT256)
+  const allowance = tokens[Field.INPUT]?.equals(WETH[(tokens[Field.INPUT] as Token).chainId])
+    ? new TokenAmount(WETH[(tokens[Field.INPUT] as Token).chainId], MAX_UINT256)
     : _allowance
 
   // get permitAndCall allowance if the input token supports permit
@@ -247,7 +251,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // get input balance for validation purposes
   const ETHBalance = useETHBalance(account)
   const _balance = useTokenBalance(tokens[Field.INPUT], account)
-  const balance = tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId]) ? ETHBalance.data : _balance.data
+  const balance = tokens[Field.INPUT]?.equals(WETH[(tokens[Field.INPUT] as Token)?.chainId])
+    ? ETHBalance.data
+    : _balance.data
 
   // compute flags for warning states
   const warning = !!trade && Number.parseFloat(trade.slippage.toSignificant(2)) >= 5
@@ -261,7 +267,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
   // compute flag for whether maxing is allowed
   const canMax =
-    !tokens[Field.INPUT]?.equals(WETH[tokens[Field.INPUT]?.chainId]) &&
+    !tokens[Field.INPUT]?.equals(WETH[(tokens[Field.INPUT] as Token).chainId]) &&
     !isInvalidRoute &&
     formatted[Field.INPUT]?.length === 0 &&
     !!balance &&
@@ -279,22 +285,22 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
       let routerArguments: any[] // eslint-disable-line @typescript-eslint/no-explicit-any
       let value: Required<PayableOverrides>['value'] = 0
 
-      if (trade.tradeType === TradeType.EXACT_INPUT) {
-        if (tokens[Field.INPUT].equals(WETH[tokens[Field.INPUT].chainId])) {
+      if (trade?.tradeType === TradeType.EXACT_INPUT) {
+        if ((tokens[Field.INPUT] as Token).equals(WETH[(tokens[Field.INPUT] as Token).chainId])) {
           routerFunctionNames = ['swapExactETHForTokens', 'swapExactETHForTokensSupportingFeeOnTransferTokens']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
-            route.path.map((token) => token.address),
+            (route as Route).path.map((token) => token.address),
             account,
             deadline,
           ]
           value = `0x${parsed[Field.INPUT].raw.toString(16)}`
-        } else if (tokens[Field.OUTPUT].equals(WETH[tokens[Field.OUTPUT].chainId])) {
+        } else if ((tokens[Field.OUTPUT] as Token).equals(WETH[(tokens[Field.OUTPUT] as Token).chainId])) {
           routerFunctionNames = ['swapExactTokensForETH', 'swapExactTokensForETHSupportingFeeOnTransferTokens']
           routerArguments = [
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
-            route.path.map((token) => token.address),
+            (route as Route).path.map((token) => token.address),
             account,
             deadline,
           ]
@@ -303,27 +309,27 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
           routerArguments = [
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
-            route.path.map((token) => token.address),
+            (route as Route).path.map((token) => token.address),
             account,
             deadline,
           ]
         }
       } else {
-        if (tokens[Field.INPUT].equals(WETH[tokens[Field.INPUT].chainId])) {
+        if ((tokens[Field.INPUT] as Token).equals(WETH[(tokens[Field.INPUT] as Token).chainId])) {
           routerFunctionNames = ['swapETHForExactTokens']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
-            route.path.map((token) => token.address),
+            (route as Route).path.map((token) => token.address),
             account,
             deadline,
           ]
           value = `0x${parsed[Field.INPUT].raw.toString(16)}`
-        } else if (tokens[Field.OUTPUT].equals(WETH[tokens[Field.OUTPUT].chainId])) {
+        } else if ((tokens[Field.OUTPUT] as Token).equals(WETH[(tokens[Field.OUTPUT] as Token).chainId])) {
           routerFunctionNames = ['swapTokensForExactETH']
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
-            route.path.map((token) => token.address),
+            (route as Route).path.map((token) => token.address),
             account,
             deadline,
           ]
@@ -332,7 +338,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
           routerArguments = [
             `0x${parsed[Field.OUTPUT].raw.toString(16)}`,
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
-            route.path.map((token) => token.address),
+            (route as Route).path.map((token) => token.address),
             account,
             deadline,
           ]
@@ -343,14 +349,17 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
       if (mockGas) {
         // because we can't estimate gas, as it will fail b/c of the approve, we are forced to use the first function
         const routerFunctionName = routerFunctionNames[0]
-        return await router[routerFunctionName](...routerArguments, { value, gasLimit: GAS_LIMIT_WHEN_MOCKING }).catch(
-          (error) => {
+        return await (router as Contract)
+          [routerFunctionName](...routerArguments, {
+            value,
+            gasLimit: GAS_LIMIT_WHEN_MOCKING,
+          })
+          .catch((error: ErrorWithCode) => {
             if (error?.code !== 4001) {
               console.log(`${routerFunctionName} failed with a mocked gas limit.`, error)
             }
             throw error
-          }
-        )
+          })
       }
 
       // we have permit data
@@ -365,14 +374,16 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         // try to get a gas limit for each function name in turn
         for (const routerFunctionName of routerFunctionNames) {
-          const routerFunctionFragment = router.interface.fragments.filter(({ name }) => name === routerFunctionName)[0]
+          const routerFunctionFragment = (router as Contract).interface.fragments.filter(
+            ({ name }) => name === routerFunctionName
+          )[0]
           const routerFunctionSelector = hexDataSlice(
-            id(`${routerFunctionName}(${routerFunctionFragment.inputs.map(({ type }) => type).join(',')})`),
+            id(`${routerFunctionName}(${routerFunctionFragment?.inputs.map(({ type }) => type).join(',')})`),
             0,
             4
           )
           const permitAndCallArguments = [
-            tokens[Field.INPUT].address,
+            (tokens[Field.INPUT] as Token).address,
             `0x${parsed[Field.INPUT].raw.toString(16)}`,
             permit.permitSelector,
             permit.permitData,
@@ -391,7 +402,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
                 value,
                 gasLimit,
               })
-              .catch((error) => {
+              .catch((error: ErrorWithCode) => {
                 if (error?.code !== 4001) {
                   console.log(`${routerFunctionName} failed via permitAndCall.`, error)
                 }
@@ -410,18 +421,22 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
       // try to get a gas limit for each function name in turn
       for (const routerFunctionName of routerFunctionNames) {
-        const gasLimit: BigNumber | void = await router.estimateGas[routerFunctionName](...routerArguments, { value })
+        const gasLimit: BigNumber | void = await (router as Contract).estimateGas[
+          routerFunctionName
+        ](...routerArguments, { value })
           .then((gasLimit) => gasLimit.mul(105).div(100))
           .catch((error) => {
             console.log(`estimateGas failed for ${routerFunctionName}.`, error)
           })
         if (BigNumber.isBigNumber(gasLimit)) {
-          return await router[routerFunctionName](...routerArguments, { value, gasLimit }).catch((error) => {
-            if (error?.code !== 4001) {
-              console.log(`${routerFunctionName} failed.`, error)
-            }
-            throw error
-          })
+          return await (router as Contract)
+            [routerFunctionName](...routerArguments, { value, gasLimit })
+            .catch((error: ErrorWithCode) => {
+              if (error?.code !== 4001) {
+                console.log(`${routerFunctionName} failed.`, error)
+              }
+              throw error
+            })
         }
       }
       // if we're here, it means all estimateGas calls failed
@@ -434,9 +449,9 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     }
 
     const deadline = Math.floor(Date.now() / 1000) + deadlineDelta
-    let approved = JSBI.greaterThanOrEqual(allowance.raw, parsed[Field.INPUT].raw)
+    let approved = JSBI.greaterThanOrEqual((allowance as TokenAmount).raw, parsed[Field.INPUT].raw)
     let mockGas = false
-    let permit: Permit
+    let permit: Permit | undefined
     if (!approved) {
       let tryToManuallyApprove = true
 
@@ -451,7 +466,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             permitData: '0x',
           }
         } else {
-          await gatherPermit(account, deadline, approveMax, tokens[Field.INPUT], library)
+          await gatherPermit(account as string, deadline, approveMax, tokens[Field.INPUT] as Token, library)
             .then((gatheredPermit) => {
               approved = true
               tryToManuallyApprove = false
@@ -469,14 +484,14 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
       }
 
       if (tryToManuallyApprove) {
-        await inputToken
+        await (inputToken as Contract)
           .approve(ROUTER_ADDRESS, `0x${(approveMax ? MAX_UINT256 : parsed[Field.INPUT].raw).toString(16)}`)
-          .then(({ hash }) => {
-            addTransaction(chainId, hash)
+          .then(({ hash }: { hash: string }) => {
+            addTransaction(chainId as number, hash)
             approved = true
             mockGas = true
           })
-          .catch((error) => {
+          .catch((error: ErrorWithCode) => {
             if (error?.code !== 4001) {
               console.log(`approve failed.`, error)
             }
@@ -488,7 +503,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
       return (
         innerSwap(deadline, mockGas, permit)
           .then(({ hash }) => {
-            addTransaction(chainId, hash)
+            addTransaction(chainId as number, hash)
             dispatch({
               type: ActionType.TYPE,
               payload: { field: independentField, value: '' },
@@ -586,7 +601,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             onClick={(): void => {
               dispatch({
                 type: ActionType.TYPE,
-                payload: { field: Field.INPUT, value: balance.toExact() },
+                payload: { field: Field.INPUT, value: balance?.toExact() },
               })
             }}
           >
@@ -631,7 +646,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             onClick={(): void => {
               dispatch({
                 type: ActionType.TYPE,
-                payload: { field: Field.INPUT, value: balance.toExact() },
+                payload: { field: Field.INPUT, value: balance?.toExact() },
               })
             }}
           >

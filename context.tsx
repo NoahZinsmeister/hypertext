@@ -40,7 +40,8 @@ function useLocalStorage<T, S = T>(
       return defaultValue
     } else {
       try {
-        return deserialize(JSON.parse(window.localStorage.getItem(key))) ?? defaultValue
+        const item = window.localStorage.getItem(key)
+        return item === null ? defaultValue : deserialize(JSON.parse(item)) ?? defaultValue
       } catch {
         return defaultValue
       }
@@ -59,7 +60,7 @@ function useLocalStorage<T, S = T>(
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serializeTokens(
   tokens: Token[]
-): { chainId: number; address: string; decimals: number; symbol: string; name: string }[] {
+): { chainId: number; address: string; decimals: number; symbol?: string; name?: string }[] {
   return tokens.map((token) => ({
     chainId: token.chainId,
     address: token.address,
@@ -91,8 +92,8 @@ interface Transaction {
 const HypertextContext = createContext<
   [
     {
-      firstToken: Token
-      secondToken: Token
+      firstToken: Token | undefined
+      secondToken: Token | undefined
       approveMax: boolean
       deadline: number
       slippage: number
@@ -100,8 +101,8 @@ const HypertextContext = createContext<
       tokens: Token[]
     },
     {
-      setFirstToken: Dispatch<SetStateAction<Token>>
-      setSecondToken: Dispatch<SetStateAction<Token>>
+      setFirstToken: Dispatch<SetStateAction<Token | undefined>>
+      setSecondToken: Dispatch<SetStateAction<Token | undefined>>
       setApproveMax: Dispatch<SetStateAction<boolean>>
       setDeadline: Dispatch<SetStateAction<number>>
       setSlippage: Dispatch<SetStateAction<number>>
@@ -118,8 +119,8 @@ function useHypertextContext() {
 
 export default function Provider({ children }: { children: ReactNode }): JSX.Element {
   // global state
-  const [firstToken, setFirstToken] = useState<Token>()
-  const [secondToken, setSecondToken] = useState<Token>()
+  const [firstToken, setFirstToken] = useState<Token | undefined>()
+  const [secondToken, setSecondToken] = useState<Token | undefined>()
 
   // versioning
   const [version, setVersion] = useLocalStorage<number>(LocalStorageKeys.Version, NO_VERSION)
@@ -185,12 +186,12 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
   )
 }
 
-export function useFirstToken(): [Token, ReturnType<typeof useHypertextContext>[1]['setFirstToken']] {
+export function useFirstToken(): [Token | undefined, ReturnType<typeof useHypertextContext>[1]['setFirstToken']] {
   const [{ firstToken }, { setFirstToken }] = useHypertextContext()
   return [firstToken, setFirstToken]
 }
 
-export function useSecondToken(): [Token, ReturnType<typeof useHypertextContext>[1]['setSecondToken']] {
+export function useSecondToken(): [Token | undefined, ReturnType<typeof useHypertextContext>[1]['setSecondToken']] {
   const [{ secondToken }, { setSecondToken }] = useHypertextContext()
   return [secondToken, setSecondToken]
 }

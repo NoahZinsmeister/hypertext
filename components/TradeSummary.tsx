@@ -25,15 +25,15 @@ export default function TradeSummary({
   warning,
   danger,
 }: {
-  route?: Route
+  route?: Route | null
   trade?: Trade
   warning: boolean
   danger: boolean
 }): JSX.Element {
   const { colorMode } = useColorMode()
 
-  const size = useWindowSize()
-  const isVertical = size?.height > size?.width
+  const { height, width } = useWindowSize()
+  const isVertical = height && width && height > width
 
   const [invert, setInvert] = useState(false)
 
@@ -85,7 +85,7 @@ export default function TradeSummary({
           )}
         </StatNumber>
         <StatHelpText w="max-content" m={0} height="initial">
-          {path.length === 0 ? '‎' : path.slice(0, route.path.length - 1).join(' / ')}
+          {path.length === 0 ? '‎' : path.slice(0, path.length - 1).join(' / ')}
           {path.length === 0 ? '‎' : ` / 1 ${path.slice(-1)}`}
         </StatHelpText>
       </Stat>

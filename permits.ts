@@ -88,7 +88,7 @@ const permitGatherers: { [chainId: number]: { [tokenAddress: string]: PermitGath
 }
 
 export function canPermit(token?: Token): boolean {
-  return !!permitGatherers[token?.chainId]?.[token?.address]
+  return !token ? false : !!permitGatherers[token.chainId]?.[token.address]
 }
 
 export async function gatherPermit(

@@ -11,6 +11,7 @@ import { useETHBalance } from '../data'
 import { useQueryParameters } from '../hooks'
 import { QueryParameters } from '../constants'
 import ErrorBoundary from './ErrorBoundary'
+import { TokenAmount } from '@uniswap/sdk'
 
 function ETHBalance(): JSX.Element {
   const { account } = useWeb3React()
@@ -26,12 +27,12 @@ function ETHBalance(): JSX.Element {
       _focus={{}}
       style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
     >
-      Ξ {data.toSignificant(4, { groupSeparator: ',' })}
+      Ξ {(data as TokenAmount).toSignificant(4, { groupSeparator: ',' })}
     </Button>
   )
 }
 
-export default function Account({ triedToEagerConnect }: { triedToEagerConnect: boolean }): JSX.Element {
+export default function Account({ triedToEagerConnect }: { triedToEagerConnect: boolean }): JSX.Element | null {
   const { active, error, activate, library, chainId, account, setError } = useWeb3React<Web3Provider>()
 
   // initialize metamask onboarding
@@ -54,7 +55,7 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
   useEffect(() => {
     if (active || error) {
       setConnecting(false)
-      onboarding.current.stopOnboarding()
+      onboarding.current?.stopOnboarding()
     }
   }, [active, error])
 
@@ -104,7 +105,7 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
             {MetaMaskOnboarding.isMetaMaskInstalled() ? 'Connect to MetaMask' : 'Connect to Wallet'}
           </Button>
         ) : (
-          <Button leftIcon={'metamask' as 'edit'} onClick={() => onboarding.current.startOnboarding()}>
+          <Button leftIcon={'metamask' as 'edit'} onClick={() => onboarding.current?.startOnboarding()}>
             Install Metamask
           </Button>
         )}
@@ -112,7 +113,7 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
     )
   }
 
-  let leftIcon: string
+  let leftIcon: string | undefined
   // check walletconnect first because sometime metamask can be installed but we're still using walletconnect
   if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
     leftIcon = 'walletconnect'
@@ -160,7 +161,7 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
         rightIcon="external-link"
         style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
         {...{
-          href: formatEtherscanLink(EtherscanType.Account, [chainId, account]),
+          href: formatEtherscanLink(EtherscanType.Account, [chainId as number, account]),
           target: '_blank',
           rel: 'noopener noreferrer',
         }}

@@ -10,7 +10,7 @@ import ColorBox from './ColorBox'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
 import TokenBalance from './TokenBalance'
-import { WETH, ChainId } from '@uniswap/sdk'
+import { WETH, ChainId, Token } from '@uniswap/sdk'
 import WalletConnect from './WalletConnect'
 import { QueryParameters } from '../constants'
 
@@ -73,10 +73,10 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
           ) : (
             [firstToken, secondToken]
               .filter((token) => token)
-              .filter((token) => !token.equals(WETH[token.chainId]))
+              .filter((token) => !token?.equals(WETH[token.chainId]))
               .map((token) => (
-                <Box key={token.address}>
-                  <TokenBalance token={token} />
+                <Box key={token?.address}>
+                  <TokenBalance token={token as Token} />
                 </Box>
               ))
           )}

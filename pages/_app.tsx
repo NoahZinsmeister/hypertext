@@ -22,7 +22,7 @@ import Loading from '../components/Loading'
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
-function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Element {
+function FunctionalApp({ Component }: { Component: NextComponentType }): JSX.Element | null {
   const [painted, setPainted] = useState(false)
   useIsomorphicLayoutEffect(() => {
     setPainted(true)

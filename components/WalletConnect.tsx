@@ -1,4 +1,4 @@
-import { Button, Box } from '@chakra-ui/core'
+import { Button } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { useEffect, useState } from 'react'
@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { walletconnect } from '../connectors'
 import { UserRejectedRequestError } from '@web3-react/walletconnect-connector'
 
-export default function WalletConnect(): JSX.Element {
+export default function WalletConnect(): JSX.Element | null {
   const { active, error, activate, setError } = useWeb3React<Web3Provider>()
 
   const [connecting, setConnecting] = useState(false)

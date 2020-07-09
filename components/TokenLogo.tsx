@@ -43,7 +43,7 @@ export default function TokenLogo({ token, size }: { token: Token; size: string 
 }
 
 type Swatch = { hex: string } | null
-let SWATCHES: { [chainId: number]: { [address: string]: Swatch } } = {}
+let SWATCHES: { [chainId: number]: { [address: string]: Swatch | undefined } } = {}
 
 export function TokenLogoColor({
   token,
@@ -100,5 +100,7 @@ export function TokenLogoColor({
     }
   }, [token])
 
-  return children(!BROKEN[token?.chainId]?.[token?.address] ? SWATCHES[token?.chainId]?.[token?.address] : null)
+  return children(
+    !token ? undefined : !BROKEN[token.chainId]?.[token.address] ? SWATCHES[token.chainId]?.[token.address] : undefined
+  )
 }
