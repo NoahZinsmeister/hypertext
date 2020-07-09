@@ -64,13 +64,13 @@ function PastedTokenData({ address }: { address: string }): JSX.Element {
       </Text>
 
       <ComboboxList as={List}>
-        <ComboboxOption as={ListItem} key={data.address} value={data.address}>
+        <ComboboxOption as={ListItem} key={(data as Token).address} value={(data as Token).address}>
           <Stack direction="row" align="center" p="0.5rem" shouldWrapChildren>
-            <TokenLogo token={data} size="1.5rem" />
+            <TokenLogo token={data as Token} size="1.5rem" />
 
             <Stack direction="column" ml="1rem" spacing={0}>
-              <Text>{data.symbol}</Text>
-              <Text fontSize="1rem">{data.name}</Text>
+              <Text>{(data as Token).symbol}</Text>
+              <Text fontSize="1rem">{(data as Token).name}</Text>
             </Stack>
           </Stack>
         </ComboboxOption>
@@ -79,7 +79,7 @@ function PastedTokenData({ address }: { address: string }): JSX.Element {
   )
 }
 
-function RemoteTokens({ query }: { query: string }): JSX.Element {
+function RemoteTokens({ query }: { query: string }): JSX.Element | null {
   const debouncedValue = useDefaultedDebounce(query, '', 200)
 
   return debouncedValue.length === 0 ? null : (
@@ -131,14 +131,14 @@ function RemoteTokensData({ query }: { query: string }): JSX.Element {
         .map((address) => remoteTokens.find((remoteToken) => remoteToken.address === address)), // get the full remote tokens
     [remoteTokens, tokens]
   ).sort((a, b) => {
-    const aExact = a.symbol.slice(0, query.length).toLowerCase() === query.toLowerCase()
-    const bExact = b.symbol.slice(0, query.length).toLowerCase() === query.toLowerCase()
+    const aExact = a?.symbol?.slice(0, query.length)?.toLowerCase() === query.toLowerCase()
+    const bExact = b?.symbol?.slice(0, query.length)?.toLowerCase() === query.toLowerCase()
     if (aExact && !bExact) {
       return -1
     } else if (!aExact && bExact) {
       return 1
     } else {
-      return a.symbol.toLowerCase() > b.symbol.toLowerCase() ? 1 : -1
+      return (a?.symbol?.toLowerCase() ?? 0) > (b?.symbol?.toLowerCase() ?? 0) ? 1 : -1
     }
   })
 
@@ -149,15 +149,15 @@ function RemoteTokensData({ query }: { query: string }): JSX.Element {
   ) : (
     <ComboboxList as={List}>
       {remoteTokensFiltered.map((token) => {
-        const DUMMY = new Token(chainId, token.address, 18) // we don't know if it actually has 18 decimals
+        const DUMMY = new Token(chainId as number, (token as Token).address, 18) // we don't know if it actually has 18 decimals
         return (
-          <ComboboxOption as={ListItem} key={token.address} value={token.address}>
+          <ComboboxOption as={ListItem} key={(token as Token).address} value={(token as Token).address}>
             <Stack direction="row" align="center" p="0.5rem" shouldWrapChildren>
               <TokenLogo token={DUMMY} size="1.5rem" />
 
               <Stack direction="column" ml="1rem" spacing={0}>
-                <Text>{token.symbol}</Text>
-                <Text fontSize="1rem">{token.name}</Text>
+                <Text>{(token as Token).symbol}</Text>
+                <Text fontSize="1rem">{(token as Token).name}</Text>
               </Stack>
             </Stack>
           </ComboboxOption>
@@ -176,7 +176,7 @@ export default function TokenSelect({
   tokenAddress?: string
   isInvalid: boolean
   isDisabled: boolean
-  onAddressSelect: (address: string) => void
+  onAddressSelect: (address: string | undefined) => void
 }): JSX.Element {
   const { colors } = useTheme()
   const { colorMode } = useColorMode()
@@ -203,7 +203,7 @@ export default function TokenSelect({
     valueAsAddress = null
   }
 
-  const ref = useRef<HTMLInputElement>()
+  const ref = useRef<HTMLInputElement>(null)
   useLayoutEffect(() => {
     if (ref.current)
       ref.current.size = tokenDerivedFromProps
@@ -254,7 +254,7 @@ export default function TokenSelect({
     .filter((token) => {
       const addressMatch = valueAsAddress === token.address
       const displayMatch = value.toLowerCase() === getTokenDisplayValue(token).slice(0, value.length).toLowerCase()
-      const nameMatch = !token.equals(WETH[token.chainId]) && token.name.toLowerCase().includes(value.toLowerCase())
+      const nameMatch = !token.equals(WETH[token.chainId]) && token?.name?.toLowerCase()?.includes(value.toLowerCase())
       return addressMatch || displayMatch || nameMatch
     })
     .sort((a: Token, b: Token) => {
@@ -300,14 +300,16 @@ export default function TokenSelect({
               }
               onChange={onChange}
               title="Token Select"
-              onCopy={(event): void => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onCopy={(event: any): void => {
                 // copy the full address if we've shortened it
                 if (valueAsAddress) {
                   event.preventDefault()
                   event.clipboardData.setData('text/plain', valueAsAddress)
                 }
               }}
-              onCut={(event): void => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              onCut={(event: any): void => {
                 // cut the full address if we've shortened it
                 if (valueAsAddress) {
                   event.preventDefault()
