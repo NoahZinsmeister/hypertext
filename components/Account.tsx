@@ -32,7 +32,7 @@ function ETHBalance(): JSX.Element {
       style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
     >
       Ξ{' '}
-      {showUSD
+      {showUSD && USDETHPrice
         ? `$${(data as TokenAmount).multiply(USDETHPrice).toFixed(2, { groupSeparator: ',' })}`
         : (data as TokenAmount).toSignificant(4, { groupSeparator: ',' })}
     </Button>

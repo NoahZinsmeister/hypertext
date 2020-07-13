@@ -5,7 +5,7 @@ import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { PayableOverrides, Contract } from '@ethersproject/contracts'
 import { BigNumber } from '@ethersproject/bignumber'
-import { TradeType, TokenAmount, JSBI, WETH, Percent, Token, Route } from '@uniswap/sdk'
+import { TradeType, TokenAmount, JSBI, WETH, Percent, Token, Route, Fraction } from '@uniswap/sdk'
 import { hexDataSlice } from '@ethersproject/bytes'
 import { id } from '@ethersproject/hash'
 import { defaultAbiCoder } from '@ethersproject/abi'
@@ -226,11 +226,11 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   const USDAmountsFormatted = {
     [Field.INPUT]:
       parsed[Field.INPUT] && USDPrices[Field.INPUT]
-        ? parsed[Field.INPUT].multiply(USDPrices[Field.INPUT]).toFixed(2, { groupSeparator: ',' })
+        ? parsed[Field.INPUT].multiply(USDPrices[Field.INPUT] as Fraction).toFixed(2, { groupSeparator: ',' })
         : undefined,
     [Field.OUTPUT]:
       parsed[Field.OUTPUT] && USDPrices[Field.OUTPUT]
-        ? parsed[Field.OUTPUT].multiply(USDPrices[Field.OUTPUT]).toFixed(2, { groupSeparator: ',' })
+        ? parsed[Field.OUTPUT].multiply(USDPrices[Field.OUTPUT] as Fraction).toFixed(2, { groupSeparator: ',' })
         : undefined,
   }
 
