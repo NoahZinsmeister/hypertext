@@ -16,7 +16,7 @@ import { getTokenDisplayValue, getPercentChange } from '../utils'
 import { useWindowSize, useUSDTokenPrice } from '../hooks'
 import { useShowUSD } from '../context'
 
-function InvisibleWidthMaintainer({ children }: { children: string }): JSX.Element {
+function InvisibleWidthMaintainer({ children }: { children?: string }): JSX.Element {
   return <span style={{ display: 'block', maxHeight: 0, visibility: 'hidden' }}>{children}</span>
 }
 
@@ -26,15 +26,15 @@ export default function TradeSummary({
   warning,
   danger,
 }: {
-  route?: Route
+  route?: Route | null
   trade?: Trade
   warning: boolean
   danger: boolean
 }): JSX.Element {
   const { colorMode } = useColorMode()
 
-  const size = useWindowSize()
-  const isVertical = size?.height > size?.width
+  const { height, width } = useWindowSize()
+  const isVertical = height && width && height > width
 
   const [invert, setInvert] = useState(false)
 
@@ -127,7 +127,7 @@ export default function TradeSummary({
             ` / 1 ${path.slice(-1)}`
           ) : (
             <>
-              {path.length === 0 ? '‎' : path.slice(0, route.path.length - 1).join(' / ')}
+              {path.length === 0 ? '‎' : path.slice(0, path.length - 1).join(' / ')}
               {path.length === 0 ? '‎' : ` / 1 ${path.slice(-1)}`}
             </>
           )}

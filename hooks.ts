@@ -119,7 +119,7 @@ export function useEagerConnect(): boolean {
   return tried
 }
 
-const chainMappings = {
+const chainMappings: { [key: string]: number } = {
   '1': 1,
   mainnet: 1,
   '3': 3,
@@ -140,18 +140,23 @@ export function useQueryParameters(): {
 } {
   const { query } = useRouter()
 
-  let candidateChainId: number
+  let candidateChainId: number | undefined
   try {
     candidateChainId = chainMappings[query[QueryParameters.CHAIN] as string]
   } catch {}
-  const chainId = injected.supportedChainIds.includes(candidateChainId) ? candidateChainId : undefined
+  const chainId =
+    !!injected.supportedChainIds &&
+    typeof candidateChainId === 'number' &&
+    injected.supportedChainIds.includes(candidateChainId)
+      ? candidateChainId
+      : undefined
 
-  let input: string
+  let input: string | undefined
   try {
     if (typeof query[QueryParameters.INPUT] === 'string') input = getAddress(query[QueryParameters.INPUT] as string)
   } catch {}
 
-  let output: string
+  let output: string | undefined
   try {
     if (typeof query[QueryParameters.OUTPUT] === 'string') output = getAddress(query[QueryParameters.OUTPUT] as string)
   } catch {}
@@ -166,19 +171,22 @@ export function useQueryParameters(): {
   )
 }
 
-function useDirectPair(inputToken?: Token, outputToken?: Token): Pair {
-  const bothDefined = !!inputToken && !!outputToken
-  const invalid = bothDefined && inputToken.equals(outputToken)
+function useDirectPair(inputToken?: Token, outputToken?: Token): Pair | undefined | null {
   const { data: pair } = useReserves(inputToken, outputToken)
-  return invalid ? null : pair
+
+  if (!!inputToken && !!outputToken && inputToken.equals(outputToken)) {
+    return null
+  }
+
+  return pair
 }
 
 export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | Route | null, Pair[]] {
   // direct pair
   const directPair = useDirectPair(inputToken, outputToken)
   // WETH pairs
-  const WETHInputPair = useDirectPair(WETH[inputToken?.chainId], inputToken)
-  const WETHOutputPair = useDirectPair(WETH[outputToken?.chainId], outputToken)
+  const WETHInputPair = useDirectPair(inputToken ? WETH[inputToken.chainId] : undefined, inputToken)
+  const WETHOutputPair = useDirectPair(outputToken ? WETH[outputToken.chainId] : undefined, outputToken)
   // DAI pairs
   const DAIInputPair = useDirectPair(inputToken?.chainId === ChainId.MAINNET ? DAI : undefined, inputToken)
   const DAIOutputPair = useDirectPair(outputToken?.chainId === ChainId.MAINNET ? DAI : undefined, outputToken)
@@ -193,7 +201,7 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
     inputToken?.chainId === ChainId.MAINNET ? USDC : undefined
   )
 
-  const pairs = [
+  const pairs: Pair[] = [
     directPair,
     WETHInputPair,
     WETHOutputPair,
@@ -204,19 +212,22 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
     DAIWETH,
     USDCWETH,
     DAIUSDC,
-  ]
-    // filter out invalid pairs
-    .filter((p) => !!p)
-    // filter out duplicated pairs
-    .filter((p, i, pairs) => i === pairs.findIndex((pair) => pair.liquidityToken.address === p.liquidityToken.address))
+  ].filter((p, i, pairs) => {
+    // filter out invalid pairs or pairs whose data hasn't been fetched yet
+    if (!!!p) {
+      return false
+    } else {
+      return i === pairs.findIndex((pair) => pair?.liquidityToken?.address === p.liquidityToken.address)
+    }
+  }) as Pair[]
 
   const directRoute = useMemo(
-    () => (directPair ? new Route([directPair], inputToken) : directPair === null ? null : undefined),
+    () => (directPair && inputToken ? new Route([directPair], inputToken) : directPair === null ? null : undefined),
     [directPair, inputToken]
   )
   const WETHRoute = useMemo(
     () =>
-      WETHInputPair && WETHOutputPair
+      WETHInputPair && WETHOutputPair && inputToken
         ? new Route([WETHInputPair, WETHOutputPair], inputToken)
         : WETHInputPair === null || WETHOutputPair === null
         ? null
@@ -225,7 +236,7 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
   )
   const DAIRoute = useMemo(
     () =>
-      DAIInputPair && DAIOutputPair
+      DAIInputPair && DAIOutputPair && inputToken
         ? new Route([DAIInputPair, DAIOutputPair], inputToken)
         : DAIInputPair === null || DAIOutputPair === null
         ? null
@@ -234,7 +245,7 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
   )
   const USDCRoute = useMemo(
     () =>
-      USDCInputPair && USDCOutputPair
+      USDCInputPair && USDCOutputPair && inputToken
         ? new Route([USDCInputPair, USDCOutputPair], inputToken)
         : USDCInputPair === null || USDCOutputPair === null
         ? null
@@ -254,8 +265,8 @@ export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | 
 }
 
 export function useTrade(
-  inputToken: Token,
-  outputToken: Token,
+  inputToken: Token | undefined,
+  outputToken: Token | undefined,
   pairs: Pair[],
   independentAmount: TokenAmount,
   tradeType: TradeType
@@ -285,7 +296,7 @@ export function useContract(address?: string, ABI?: ContractInterface, withSigne
   )
 }
 
-export function useUSDETHPrice(): Fraction {
+export function useUSDETHPrice(): Fraction | undefined {
   const { chainId } = useWeb3React()
 
   const DAIWETH = useDirectPair(chainId === ChainId.MAINNET ? DAI : undefined, WETH[ChainId.MAINNET])
@@ -297,7 +308,7 @@ export function useUSDETHPrice(): Fraction {
       USDCWETH && new Route([USDCWETH], WETH[ChainId.MAINNET])?.midPrice?.adjusted,
     ].filter((price) => !!price)
 
-    return priceFractions
+    return (priceFractions as Fraction[])
       .reduce((accumulator, priceFraction) => accumulator.add(priceFraction), new Fraction('0'))
       .divide(priceFractions.length.toString())
   }, [DAIWETH, USDCWETH])
@@ -305,7 +316,7 @@ export function useUSDETHPrice(): Fraction {
   return price.equalTo('0') ? undefined : price
 }
 
-export function useUSDTokenPrice(token: Token): Fraction {
+export function useUSDTokenPrice(token?: Token): Fraction | undefined {
   const USDETHPrice = useUSDETHPrice()
 
   const DAIWETH = useDirectPair(USDETHPrice ? DAI : undefined, WETH[ChainId.MAINNET])
@@ -324,18 +335,18 @@ export function useUSDTokenPrice(token: Token): Fraction {
     let priceFractions = []
 
     // if the token has a WETH pair with at least 5 ETH
-    if (tokenWETH && tokenWETH.reserveOf(WETH[ChainId.MAINNET]).greaterThan(JSBI.BigInt(5))) {
+    if (token && USDETHPrice && tokenWETH && tokenWETH.reserveOf(WETH[ChainId.MAINNET]).greaterThan(JSBI.BigInt(5))) {
       const ETHTokenPrice = new Route([tokenWETH], token).midPrice.adjusted
       priceFractions.push(USDETHPrice.multiply(ETHTokenPrice))
     }
     // if DAIWETH pair exists and the token has a DAI pair with at least 1000 DAI
-    if (DAIWETH && tokenDAI && tokenDAI.reserveOf(DAI).greaterThan(JSBI.BigInt(1000))) {
+    if (token && USDETHPrice && DAIWETH && tokenDAI && tokenDAI.reserveOf(DAI).greaterThan(JSBI.BigInt(1000))) {
       const WETHDAIPrice = new Route([DAIWETH], DAI).midPrice.adjusted
       const DAITokenPrice = new Route([tokenDAI], token).midPrice.adjusted
       priceFractions.push(USDETHPrice.multiply(WETHDAIPrice).multiply(DAITokenPrice))
     }
     // if USDCWETH pair exists and the token has a USDC pair with at least 1000 USDC
-    if (USDCWETH && tokenUSDC && tokenUSDC.reserveOf(USDC).greaterThan(JSBI.BigInt(1000))) {
+    if (token && USDETHPrice && USDCWETH && tokenUSDC && tokenUSDC.reserveOf(USDC).greaterThan(JSBI.BigInt(1000))) {
       const WETHUSDCPrice = new Route([USDCWETH], USDC).midPrice.adjusted
       const USDCTokenPrice = new Route([tokenUSDC], token).midPrice.adjusted
       priceFractions.push(USDETHPrice.multiply(WETHUSDCPrice).multiply(USDCTokenPrice))

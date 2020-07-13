@@ -3,7 +3,7 @@ import Head from 'next/head'
 
 import { isIPFS, isServerSide } from '../constants'
 
-export default function Base(): JSX.Element {
+export default function Base(): JSX.Element | null {
   // during SSR/SSG, don't specify a base tag
   if (isServerSide) {
     return null

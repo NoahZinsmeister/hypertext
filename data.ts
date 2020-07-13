@@ -46,7 +46,7 @@ function getETHBalance(library: Web3Provider): (chainId: number, address: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useETHBalance(address?: string, suspense = false): responseInterface<TokenAmount, any> {
+export function useETHBalance(address?: string | null, suspense = false): responseInterface<TokenAmount, any> {
   const { chainId, library } = useWeb3React()
   const shouldFetch = typeof chainId === 'number' && typeof address === 'string' && !!library
 
@@ -66,15 +66,17 @@ function getTokenBalance(contract: Contract, token: Token): (address: string) =>
 
 export function useTokenBalance(
   token?: Token,
-  address?: string,
+  address?: string | null,
   suspense = false
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): responseInterface<TokenAmount, any> {
   const contract = useContract(token?.address, IERC20.abi)
-  const shouldFetch = !!contract && typeof address === 'string'
+
   const result = useSWR(
-    shouldFetch ? [address, token.chainId, token.address, DataType.TokenBalance] : null,
-    getTokenBalance(contract, token),
+    typeof address === 'string' && token && contract
+      ? [address, token.chainId, token.address, DataType.TokenBalance]
+      : null,
+    getTokenBalance(contract as Contract, token as Token),
     { suspense }
   )
   useKeepSWRDataLiveAsBlocksArrive(result.mutate)
@@ -90,15 +92,17 @@ function getTokenAllowance(contract: Contract, token: Token): (owner: string, sp
 
 export function useTokenAllowance(
   token?: Token,
-  owner?: string,
+  owner?: string | null,
   spender?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): responseInterface<TokenAmount, any> {
   const contract = useContract(token?.address, IERC20.abi)
-  const shouldFetch = !!contract && typeof owner === 'string' && typeof spender === 'string'
+
   const result = useSWR(
-    shouldFetch ? [owner, spender, token.chainId, token.address, DataType.TokenAllowance] : null,
-    getTokenAllowance(contract, token)
+    typeof owner === 'string' && typeof spender === 'string' && token && contract
+      ? [owner, spender, token.chainId, token.address, DataType.TokenAllowance]
+      : null,
+    getTokenAllowance(contract as Contract, token as Token)
   )
   useKeepSWRDataLiveAsBlocksArrive(result.mutate)
   return result
@@ -122,16 +126,14 @@ function getReserves(contract: Contract, token0: Token, token1: Token): () => Pr
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<Pair | null, any> {
-  const bothDefined = !!tokenA && !!tokenB
-  const invalid = bothDefined && tokenA.equals(tokenB)
+  const invalid = !!tokenA && !!tokenB && tokenA.equals(tokenB)
   const [token0, token1] =
-    bothDefined && !invalid ? (tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]) : []
+    !!tokenA && !!tokenB && !invalid ? (tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA]) : []
   const pairAddress = !!token0 && !!token1 ? Pair.getAddress(token0, token1) : undefined
   const contract = useContract(pairAddress, IUniswapV2Pair.abi)
-  const shouldFetch = !!contract
   const result = useSWR(
-    shouldFetch ? [token0.chainId, pairAddress, DataType.Reserves] : null,
-    getReserves(contract, token0, token1)
+    token0 && pairAddress && contract && token1 ? [token0.chainId, pairAddress, DataType.Reserves] : null,
+    getReserves(contract as Contract, token0 as Token, token1 as Token)
   )
   useKeepSWRDataLiveAsBlocksArrive(result.mutate)
   return result
@@ -140,8 +142,8 @@ export function useReserves(tokenA?: Token, tokenB?: Token): responseInterface<P
 function getOnchainToken(
   contract: Contract,
   contractBytes32: Contract
-): (chainId: number, address: string) => Promise<Token> {
-  return async (chainId: number, address: string): Promise<Token> => {
+): (chainId: number, address: string) => Promise<Token | null> {
+  return async (chainId: number, address: string): Promise<Token | null> => {
     const [decimals, symbol, name] = await Promise.all([
       contract.decimals().catch(() => null),
       contract.symbol().catch(() =>
@@ -162,16 +164,21 @@ function getOnchainToken(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useOnchainToken(address?: string, suspense = false): responseInterface<Token, any> {
+export function useOnchainToken(address?: string, suspense = false): responseInterface<Token | null, any> {
   const { chainId } = useWeb3React()
   const contract = useContract(address, IERC20.abi)
   const contractBytes32 = useContract(address, ERC20_BYTES32)
-  const shouldFetch = typeof chainId === 'number' && typeof address === 'string'
-  return useSWR(shouldFetch ? [chainId, address, DataType.Token] : null, getOnchainToken(contract, contractBytes32), {
-    dedupingInterval: 60 * 1000,
-    refreshInterval: 60 * 1000,
-    suspense,
-  })
+  return useSWR(
+    typeof chainId === 'number' && typeof address === 'string' && contract && contractBytes32
+      ? [chainId, address, DataType.Token]
+      : null,
+    getOnchainToken(contract as Contract, contractBytes32 as Contract),
+    {
+      dedupingInterval: 60 * 1000,
+      refreshInterval: 60 * 1000,
+      suspense,
+    }
+  )
 }
 
 interface RemoteToken {

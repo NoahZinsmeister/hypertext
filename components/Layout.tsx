@@ -4,13 +4,15 @@ import { useWeb3React } from '@web3-react/core'
 import dynamic from 'next/dynamic'
 
 import { CHAIN_ID_NAMES } from '../utils'
-import { useBodyKeyDown, useUSDETHPrice } from '../hooks'
+import { useEagerConnect, useQueryParameters, useUSDETHPrice } from '../hooks'
 import { useTransactions, useFirstToken, useSecondToken, useShowUSD } from '../context'
 import ColorBox from './ColorBox'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
 import TokenBalance from './TokenBalance'
-import { WETH } from '@uniswap/sdk'
+import { WETH, ChainId, Token } from '@uniswap/sdk'
+import WalletConnect from './WalletConnect'
+import { QueryParameters } from '../constants'
 
 const Settings = dynamic(() => import('./Settings'))
 
@@ -25,6 +27,12 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
   const [showUSD, setShowUSD] = useShowUSD()
 
   const [transactions] = useTransactions()
+
+  // automatically try connecting to the injected connector on pageload
+  const triedToEagerConnect = useEagerConnect()
+
+  const queryParameters = useQueryParameters()
+  const requiredChainId = queryParameters[QueryParameters.CHAIN]
 
   const USDETHPrice = useUSDETHPrice()
 
@@ -55,32 +63,39 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
               </Radio>
             )}
           </Stack>
-          <Account />
+          <Account triedToEagerConnect={triedToEagerConnect} />
         </Flex>
 
-        {typeof account === 'string' && (
-          <Stack
-            position="absolute"
-            top={0}
-            right={0}
-            m={isTestnet ? '1.5rem' : '1rem'}
-            mt={isTestnet ? '5rem' : '4.5rem'}
-            alignItems="flex-end"
-            spacing="1rem"
-            zIndex={2}
-          >
-            {firstToken && !firstToken.equals(WETH[firstToken.chainId]) ? (
+        <Stack
+          position="absolute"
+          top={0}
+          right={0}
+          m={isTestnet ? '1.5rem' : '1rem'}
+          mt={isTestnet ? '5rem' : '4.5rem'}
+          alignItems="flex-end"
+          spacing="1rem"
+          zIndex={2}
+        >
+          {typeof account !== 'string' ? (
+            !triedToEagerConnect ||
+            (typeof chainId === 'number'
+              ? chainId !== ChainId.MAINNET
+              : typeof requiredChainId === 'number' && requiredChainId !== ChainId.MAINNET) ? null : (
               <Box>
-                <TokenBalance token={firstToken} />
+                <WalletConnect />
               </Box>
-            ) : null}
-            {secondToken && !secondToken.equals(WETH[secondToken.chainId]) ? (
-              <Box>
-                <TokenBalance token={secondToken} />
-              </Box>
-            ) : null}
-          </Stack>
-        )}
+            )
+          ) : (
+            [firstToken, secondToken]
+              .filter((token) => token)
+              .filter((token) => !token?.equals(WETH[token.chainId]))
+              .map((token) => (
+                <Box key={token?.address}>
+                  <TokenBalance token={token as Token} />
+                </Box>
+              ))
+          )}
+        </Stack>
 
         <Flex flexGrow={1} direction="column" overflow="auto">
           {children}

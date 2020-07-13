@@ -15,7 +15,7 @@ export function TransactionToast({ hash }: { hash: string }): JSX.Element {
     if (library) {
       let mounted = true
 
-      library.waitForTransaction(hash).then((receipt) => {
+      library.waitForTransaction(hash).then((receipt: { status: number }) => {
         if (mounted) {
           setConfirmed(receipt.status === 1 ? true : false)
         }
@@ -42,7 +42,7 @@ export function TransactionToast({ hash }: { hash: string }): JSX.Element {
         rightIcon="external-link"
         style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
         {...{
-          href: formatEtherscanLink(EtherscanType.Transaction, [chainId, hash]),
+          href: formatEtherscanLink(EtherscanType.Transaction, [chainId as number, hash]),
           target: '_blank',
           rel: 'noopener noreferrer',
         }}
@@ -57,7 +57,7 @@ export function TransactionToast({ hash }: { hash: string }): JSX.Element {
         style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
         borderLeft="1px solid white"
         onClick={(): void => {
-          removeTransaction(chainId, hash)
+          removeTransaction(chainId as number, hash)
         }}
       />
     </ButtonGroup>

@@ -12,7 +12,7 @@ export function shortenHex(hex: string, length = 4): string {
   return `${hex.substring(0, length + 2)}…${hex.substring(hex.length - length)}`
 }
 
-export const CHAIN_ID_NAMES = {
+export const CHAIN_ID_NAMES: { [key: number]: string } = {
   1: 'Mainnet',
   3: 'Ropsten',
   4: 'Rinkeby',
@@ -20,7 +20,7 @@ export const CHAIN_ID_NAMES = {
   42: 'Kovan',
 }
 
-export const INFURA_PREFIXES = {
+export const INFURA_PREFIXES: { [key: number]: string } = {
   1: 'mainnet',
   3: 'ropsten',
   4: 'rinkeby',
@@ -34,7 +34,7 @@ export enum EtherscanType {
   Transaction,
 }
 
-const ETHERSCAN_PREFIXES = {
+const ETHERSCAN_PREFIXES: { [key: number]: string } = {
   1: '',
   3: 'ropsten.',
   4: 'rinkeby.',
@@ -67,7 +67,7 @@ export function formatEtherscanLink(type: EtherscanType, data: EtherscanTypeData
 
 const SAI = new Token(ChainId.MAINNET, '0x89d24A6b4CcB1B6fAA2625fE562bDD9a23260359', 18)
 export function getTokenDisplayValue(token: Token): string {
-  return token.equals(WETH[token.chainId]) ? 'ETH' : token.equals(SAI) ? 'SAI' : token.symbol
+  return token.equals(WETH[token.chainId]) ? 'ETH' : token.equals(SAI) ? 'SAI' : token.symbol ?? 'UNKNOWN'
 }
 
 export function getPercentChange(referenceRate: Price, newRate: Price, flipOrder = false): Percent {

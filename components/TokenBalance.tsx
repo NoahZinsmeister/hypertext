@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Button, Text, IconButton, useColorMode } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
-import { Token } from '@uniswap/sdk'
+import { Token, TokenAmount } from '@uniswap/sdk'
 
 import { formatEtherscanLink, EtherscanType } from '../utils'
 import { BG } from '../constants'
@@ -26,7 +26,7 @@ function Balance({ token }: { token: Token }): JSX.Element {
       variant="outline"
       backgroundColor={BG[colorMode]}
       {...{
-        href: formatEtherscanLink(EtherscanType.TokenBalance, [token, account]),
+        href: formatEtherscanLink(EtherscanType.TokenBalance, [token, account as string]),
         target: '_blank',
         rel: 'noopener noreferrer',
       }}
@@ -34,8 +34,8 @@ function Balance({ token }: { token: Token }): JSX.Element {
       <TokenLogo token={token} size="1.5rem" />
       <Text ml="0.5rem">
         {showUSD && USDTokenPrice
-          ? `$${data.multiply(USDTokenPrice).toFixed(2, { groupSeparator: ',' })}`
-          : data.toSignificant(6, { groupSeparator: ',' })}
+          ? `$${(data as TokenAmount).multiply(USDTokenPrice).toFixed(2, { groupSeparator: ',' })}`
+          : (data as TokenAmount).toSignificant(6, { groupSeparator: ',' })}
       </Text>
     </Button>
   )
