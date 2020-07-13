@@ -6,13 +6,17 @@ import { useWeb3React } from '@web3-react/core'
 import { formatEtherscanLink, EtherscanType, shortenHex } from '../utils'
 import { injected, getNetwork } from '../connectors'
 import { useETHBalance } from '../data'
-import { useEagerConnect, useQueryParameters } from '../hooks'
+import { useEagerConnect, useQueryParameters, useUSDETHPrice } from '../hooks'
 import { QueryParameters } from '../constants'
 import ErrorBoundary from './ErrorBoundary'
+import { useShowUSD } from '../context'
 
 function ETHBalance(): JSX.Element {
   const { account } = useWeb3React()
   const { data } = useETHBalance(account, true)
+
+  const [showUSD] = useShowUSD()
+  const USDETHPrice = useUSDETHPrice()
 
   return (
     <Button
@@ -24,7 +28,10 @@ function ETHBalance(): JSX.Element {
       _focus={{}}
       style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, borderRight: 'none' }}
     >
-      Ξ {data.toSignificant(4, { groupSeparator: ',' })}
+      Ξ{' '}
+      {showUSD
+        ? `$${data.multiply(USDETHPrice).toFixed(2, { groupSeparator: ',' })}`
+        : data.toSignificant(4, { groupSeparator: ',' })}
     </Button>
   )
 }
