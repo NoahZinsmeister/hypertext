@@ -1,11 +1,11 @@
 import { ReactNode } from 'react'
-import { Flex, IconButton, useDisclosure, Badge, LightMode, Stack, Box } from '@chakra-ui/core'
+import { Flex, IconButton, useDisclosure, Badge, LightMode, Stack, Box, Radio } from '@chakra-ui/core'
 import { useWeb3React } from '@web3-react/core'
 import dynamic from 'next/dynamic'
 
 import { CHAIN_ID_NAMES } from '../utils'
-import { useBodyKeyDown, useEagerConnect, useQueryParameters } from '../hooks'
-import { useTransactions, useFirstToken, useSecondToken } from '../context'
+import { useEagerConnect, useQueryParameters, useUSDETHPrice } from '../hooks'
+import { useTransactions, useFirstToken, useSecondToken, useShowUSD } from '../context'
 import ColorBox from './ColorBox'
 import Account from './Account'
 import { TransactionToast } from './TransactionToast'
@@ -21,10 +21,10 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
   const isTestnet = typeof chainId === 'number' && chainId !== 1
 
   const { isOpen: isOpenSettings, onOpen: onOpenSettings, onClose: onCloseSettings } = useDisclosure()
-  useBodyKeyDown('s', onOpenSettings, isOpenSettings)
 
   const [firstToken] = useFirstToken()
   const [secondToken] = useSecondToken()
+  const [showUSD, setShowUSD] = useShowUSD()
 
   const [transactions] = useTransactions()
 
@@ -33,6 +33,8 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
 
   const queryParameters = useQueryParameters()
   const requiredChainId = queryParameters[QueryParameters.CHAIN]
+
+  const USDETHPrice = useUSDETHPrice()
 
   return (
     <>
@@ -47,7 +49,20 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
         maxHeight="100vh"
       >
         <Flex justifyContent="space-between" flexShrink={0} overflowX="auto" p="1rem">
-          <IconButton icon="settings" variant="ghost" onClick={onOpenSettings} aria-label="Settings" />
+          <Stack spacing={0} direction="row">
+            <IconButton icon="settings" variant="ghost" onClick={onOpenSettings} aria-label="Settings" />
+            {!!USDETHPrice && (
+              <Radio
+                isChecked={showUSD}
+                onChange={() => {}} // eslint-disable-line @typescript-eslint/no-empty-function
+                onMouseEnter={() => setShowUSD(true)}
+                onMouseLeave={() => setShowUSD(false)}
+                ml="0.5rem"
+              >
+                Show $ values
+              </Radio>
+            )}
+          </Stack>
           <Account triedToEagerConnect={triedToEagerConnect} />
         </Flex>
 

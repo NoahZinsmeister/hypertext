@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react'
 import { useWeb3React } from '@web3-react/core'
-import { Token, Route, WETH, Pair, ChainId, TokenAmount, TradeType, Trade } from '@uniswap/sdk'
+import { Token, Route, WETH, Pair, ChainId, TokenAmount, TradeType, Trade, Fraction, JSBI } from '@uniswap/sdk'
 
 import { injected } from './connectors'
 import { useReserves, useBlockNumber } from './data'
@@ -9,6 +9,7 @@ import { useRouter } from 'next/router'
 import { QueryParameters } from './constants'
 import { getAddress } from '@ethersproject/address'
 import { responseInterface } from 'swr'
+import { DAI, USDC } from './tokens'
 
 export function useWindowSize(): { width: number | undefined; height: number | undefined } {
   function getSize(): ReturnType<typeof useWindowSize> {
@@ -180,8 +181,6 @@ function useDirectPair(inputToken?: Token, outputToken?: Token): Pair | undefine
   return pair
 }
 
-const DAI = new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin')
-const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD//C')
 export function useRoute(inputToken?: Token, outputToken?: Token): [undefined | Route | null, Pair[]] {
   // direct pair
   const directPair = useDirectPair(inputToken, outputToken)
@@ -295,4 +294,70 @@ export function useContract(address?: string, ABI?: ContractInterface, withSigne
         : undefined,
     [address, ABI, withSigner, library, account]
   )
+}
+
+export function useUSDETHPrice(): Fraction | undefined {
+  const { chainId } = useWeb3React()
+
+  const DAIWETH = useDirectPair(chainId === ChainId.MAINNET ? DAI : undefined, WETH[ChainId.MAINNET])
+  const USDCWETH = useDirectPair(chainId === ChainId.MAINNET ? USDC : undefined, WETH[ChainId.MAINNET])
+
+  const price = useMemo(() => {
+    const priceFractions = [
+      DAIWETH && new Route([DAIWETH], WETH[ChainId.MAINNET])?.midPrice?.adjusted,
+      USDCWETH && new Route([USDCWETH], WETH[ChainId.MAINNET])?.midPrice?.adjusted,
+    ].filter((price) => !!price)
+
+    return (priceFractions as Fraction[])
+      .reduce((accumulator, priceFraction) => accumulator.add(priceFraction), new Fraction('0'))
+      .divide(priceFractions.length.toString())
+  }, [DAIWETH, USDCWETH])
+
+  return price.equalTo('0') ? undefined : price
+}
+
+export function useUSDTokenPrice(token?: Token): Fraction | undefined {
+  const USDETHPrice = useUSDETHPrice()
+
+  const DAIWETH = useDirectPair(USDETHPrice ? DAI : undefined, WETH[ChainId.MAINNET])
+  const USDCWETH = useDirectPair(USDETHPrice ? USDC : undefined, WETH[ChainId.MAINNET])
+
+  const tokenWETH = useDirectPair(token?.chainId === ChainId.MAINNET ? token : undefined, WETH[ChainId.MAINNET])
+  const tokenDAI = useDirectPair(token?.chainId === ChainId.MAINNET ? token : undefined, DAI)
+  const tokenUSDC = useDirectPair(token?.chainId === ChainId.MAINNET ? token : undefined, USDC)
+
+  const price = useMemo(() => {
+    // early return if the token is WETH
+    if (token && token.equals(WETH[ChainId.MAINNET])) {
+      return USDETHPrice || new Fraction('0')
+    }
+
+    let priceFractions = []
+
+    // if the token has a WETH pair with at least 5 ETH
+    if (token && USDETHPrice && tokenWETH && tokenWETH.reserveOf(WETH[ChainId.MAINNET]).greaterThan(JSBI.BigInt(5))) {
+      const ETHTokenPrice = new Route([tokenWETH], token).midPrice.adjusted
+      priceFractions.push(USDETHPrice.multiply(ETHTokenPrice))
+    }
+    // if DAIWETH pair exists and the token has a DAI pair with at least 1000 DAI
+    if (token && USDETHPrice && DAIWETH && tokenDAI && tokenDAI.reserveOf(DAI).greaterThan(JSBI.BigInt(1000))) {
+      const WETHDAIPrice = new Route([DAIWETH], DAI).midPrice.adjusted
+      const DAITokenPrice = new Route([tokenDAI], token).midPrice.adjusted
+      priceFractions.push(USDETHPrice.multiply(WETHDAIPrice).multiply(DAITokenPrice))
+    }
+    // if USDCWETH pair exists and the token has a USDC pair with at least 1000 USDC
+    if (token && USDETHPrice && USDCWETH && tokenUSDC && tokenUSDC.reserveOf(USDC).greaterThan(JSBI.BigInt(1000))) {
+      const WETHUSDCPrice = new Route([USDCWETH], USDC).midPrice.adjusted
+      const USDCTokenPrice = new Route([tokenUSDC], token).midPrice.adjusted
+      priceFractions.push(USDETHPrice.multiply(WETHUSDCPrice).multiply(USDCTokenPrice))
+    }
+
+    priceFractions = priceFractions.filter((price) => !!price)
+
+    return priceFractions
+      .reduce((accumulator, priceFraction) => accumulator.add(priceFraction), new Fraction('0'))
+      .divide(priceFractions.length.toString())
+  }, [tokenWETH, token, USDETHPrice, DAIWETH, tokenDAI, USDCWETH, tokenUSDC])
+
+  return price.equalTo('0') ? undefined : price
 }

@@ -16,7 +16,7 @@ import { Stack, Button, Text, BoxProps } from '@chakra-ui/core'
 import AmountInput from '../components/AmountInput'
 import TokenSelect from '../components/TokenSelect'
 import { useTokenByAddressAndAutomaticallyAdd } from '../tokens'
-import { useRoute, useContract, useQueryParameters, useTrade } from '../hooks'
+import { useRoute, useContract, useQueryParameters, useTrade, useUSDTokenPrice } from '../hooks'
 import { useTokenBalance, useTokenAllowance, useETHBalance } from '../data'
 import {
   ROUTER_ADDRESS,
@@ -26,7 +26,15 @@ import {
   PERMIT_AND_CALL_ADDRESS,
   GAS_LIMIT_WHEN_MOCKING,
 } from '../constants'
-import { useSlippage, useDeadline, useApproveMax, useTransactions, useFirstToken, useSecondToken } from '../context'
+import {
+  useSlippage,
+  useDeadline,
+  useApproveMax,
+  useTransactions,
+  useFirstToken,
+  useSecondToken,
+  useShowUSD,
+} from '../context'
 import TradeSummary from '../components/TradeSummary'
 import { canPermit, gatherPermit, Permit } from '../permits'
 import { modifyUrlObjectForIPFS } from '../utils'
@@ -207,6 +215,23 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     } else {
       parsed[dependentField] = trade.maximumAmountIn(new Percent(`${slippage}`, `${10000}`))
     }
+  }
+
+  // usd values
+  const [showUSD] = useShowUSD()
+  const USDPrices = {
+    [Field.INPUT]: useUSDTokenPrice(tokens[Field.INPUT]),
+    [Field.OUTPUT]: useUSDTokenPrice(tokens[Field.OUTPUT]),
+  }
+  const USDAmountsFormatted = {
+    [Field.INPUT]:
+      parsed[Field.INPUT] && USDPrices[Field.INPUT]
+        ? parsed[Field.INPUT].multiply(USDPrices[Field.INPUT]).toFixed(2, { groupSeparator: ',' })
+        : undefined,
+    [Field.OUTPUT]:
+      parsed[Field.OUTPUT] && USDPrices[Field.OUTPUT]
+        ? parsed[Field.OUTPUT].multiply(USDPrices[Field.OUTPUT]).toFixed(2, { groupSeparator: ',' })
+        : undefined,
   }
 
   // calculate the formatted values from the parsed
@@ -583,9 +608,13 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         <AmountInput
           controlled={independentField === (buy ? Field.OUTPUT : Field.INPUT)}
-          isDisabled={swapping}
-          isInvalid={isInvalidTrade}
-          value={formatted[buy ? Field.OUTPUT : Field.INPUT]}
+          isDisabled={showUSD || swapping}
+          isInvalid={isInvalidTrade || (!buy && isInvalidBalance)}
+          value={
+            showUSD && USDAmountsFormatted[buy ? Field.OUTPUT : Field.INPUT]
+              ? `$${USDAmountsFormatted[buy ? Field.OUTPUT : Field.INPUT]}`
+              : formatted[buy ? Field.OUTPUT : Field.INPUT]
+          }
           onChange={(value): void => {
             dispatch({
               type: ActionType.TYPE,
@@ -628,9 +657,13 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         <AmountInput
           controlled={independentField === (buy ? Field.INPUT : Field.OUTPUT)}
-          isDisabled={swapping}
-          isInvalid={isInvalidBalance}
-          value={formatted[buy ? Field.INPUT : Field.OUTPUT]}
+          isDisabled={showUSD || swapping}
+          isInvalid={isInvalidTrade || (buy && isInvalidBalance)}
+          value={
+            showUSD && USDAmountsFormatted[buy ? Field.INPUT : Field.OUTPUT]
+              ? `$${USDAmountsFormatted[buy ? Field.INPUT : Field.OUTPUT]}`
+              : formatted[buy ? Field.INPUT : Field.OUTPUT]
+          }
           onChange={(value): void => {
             dispatch({
               type: ActionType.TYPE,
