@@ -92,12 +92,11 @@ export function modifyUrlObjectForIPFS(url: string | UrlObject): { href: UrlObje
   const normalizedURL = typeof url === 'string' ? { pathname: url } : url
   const { pathname, ...rest } = normalizedURL
 
-  const pathnameToNavigateTo = `.${pathname}`
   const pathnameForBrowser = pathname === '/' ? './' : `.${pathname}${isIPFS ? '.html' : ''}`
 
   return {
     href: {
-      pathname: pathnameToNavigateTo,
+      pathname,
       ...rest,
     },
     as: {
