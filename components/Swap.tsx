@@ -1,6 +1,6 @@
 import { useReducer, useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Link from 'next/link'
+import NextLink from 'next/link'
 import { useWeb3React } from '@web3-react/core'
 import { parseUnits } from '@ethersproject/units'
 import { PayableOverrides, Contract } from '@ethersproject/contracts'
@@ -566,7 +566,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         <SwapText>I want to</SwapText>
 
         {!!!trade ? (
-          <Link
+          <NextLink
             {...modifyUrlObjectForIPFS({
               pathname: buy ? '/sell' : '/buy',
               query: {
@@ -588,7 +588,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             >
               {buy ? 'Buy' : 'Sell'}
             </Button>
-          </Link>
+          </NextLink>
         ) : (
           <Button
             variant="solid"
