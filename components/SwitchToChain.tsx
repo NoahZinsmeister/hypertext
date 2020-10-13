@@ -6,7 +6,7 @@ import { CHAIN_ID_NAMES, modifyUrlObjectForIPFS } from '../utils'
 export default function SwitchToChain({ requiredChainId }: { requiredChainId: number }): JSX.Element {
   const { pathname, push } = useRouter()
 
-  const url = modifyUrlObjectForIPFS(pathname)
+  const { href: url, as } = modifyUrlObjectForIPFS(pathname)
 
   return (
     <Flex flexGrow={1} alignItems="center" justifyContent="center">
@@ -19,7 +19,7 @@ export default function SwitchToChain({ requiredChainId }: { requiredChainId: nu
         <Button
           width="min-content"
           onClick={(): void => {
-            push(url, undefined, { shallow: true })
+            push(url, as, { shallow: true })
           }}
         >
           Here by mistake?

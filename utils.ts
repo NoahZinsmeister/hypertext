@@ -88,13 +88,21 @@ export function getPercentChange(referenceRate: Price, newRate: Price, flipOrder
   return new Percent(percentChange.numerator, percentChange.denominator)
 }
 
-export function modifyUrlObjectForIPFS(url: string | UrlObject): UrlObject {
+export function modifyUrlObjectForIPFS(url: string | UrlObject): { href: UrlObject; as: UrlObject } {
   const normalizedURL = typeof url === 'string' ? { pathname: url } : url
   const { pathname, ...rest } = normalizedURL
-  const pathnameToNavigateTo = pathname === '/' ? './' : `.${pathname}${isIPFS ? '.html' : ''}`
+
+  const pathnameToNavigateTo = `.${pathname}`
+  const pathnameForBrowser = pathname === '/' ? './' : `.${pathname}${isIPFS ? '.html' : ''}`
 
   return {
-    pathname: pathnameToNavigateTo,
-    ...rest,
+    href: {
+      pathname: pathnameToNavigateTo,
+      ...rest,
+    },
+    as: {
+      pathname: pathnameForBrowser,
+      ...rest,
+    },
   }
 }
