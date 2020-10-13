@@ -1,11 +1,13 @@
-import { ChainId, Token } from '@uniswap/sdk'
+import { ChainId, JSBI, Token } from '@uniswap/sdk'
 import { Signature, splitSignature, hexDataSlice } from '@ethersproject/bytes'
-import { PERMIT_AND_CALL_ADDRESS, MAX_UINT256 } from './constants'
+import { PERMIT_AND_CALL_ADDRESS } from './constants'
 import { Web3Provider } from '@ethersproject/providers'
 import { Contract } from '@ethersproject/contracts'
 import { BigNumber } from '@ethersproject/bignumber'
 import { id } from '@ethersproject/hash'
 import { defaultAbiCoder } from '@ethersproject/abi'
+
+import { DAI, UNI, USDC } from './tokens'
 
 interface eth_signTypedData_v4 {
   types: {
@@ -14,7 +16,7 @@ interface eth_signTypedData_v4 {
   }
   domain: {
     name: string
-    version: string
+    version?: string
   }
   message: {
     [key: string]: any // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -34,8 +36,7 @@ interface PermitGathererReturn extends eth_signTypedData_v4 {
 type PermitGathererFunction = (
   address: string,
   deadline: number,
-  approveMax: boolean,
-  token: Token,
+  approveAmount: JSBI,
   library: Web3Provider
 ) => Promise<PermitGathererReturn>
 
@@ -46,7 +47,13 @@ const EIP712Domain = [
   { name: 'verifyingContract', type: 'address' },
 ]
 
-const DAIPermitGatherer: PermitGathererFunction = async (address, deadline, _, token, library) => {
+const EIP712DomainWithoutVersion = [
+  { name: 'name', type: 'string' },
+  { name: 'chainId', type: 'uint256' },
+  { name: 'verifyingContract', type: 'address' },
+]
+
+const DAIPermitGatherer: PermitGathererFunction = async (address, deadline, _, library) => {
   const Permit = [
     { name: 'holder', type: 'address' },
     { name: 'spender', type: 'address' },
@@ -58,14 +65,18 @@ const DAIPermitGatherer: PermitGathererFunction = async (address, deadline, _, t
     name: 'Dai Stablecoin',
     version: '1',
   }
-  const DAI = new Contract(token.address, ['function nonces(address holder) view returns (uint256 nonce)'], library)
-  const nonce: BigNumber = await DAI.nonces(address)
+  const DAIContract = new Contract(
+    DAI.address,
+    ['function nonces(address holder) view returns (uint256 nonce)'],
+    library
+  )
+  const nonce: BigNumber = await DAIContract.nonces(address)
   const message = {
     holder: address,
     spender: PERMIT_AND_CALL_ADDRESS,
     nonce: await Promise.resolve(nonce.toNumber()).catch(() => nonce.toString()),
     expiry: deadline,
-    allowed: true,
+    allowed: true, // DAI only allows unlimited approves
   }
   const inputs = ['address', 'address', 'uint256', 'uint256', 'bool', 'uint8', 'bytes32', 'bytes32']
   return {
@@ -81,7 +92,7 @@ const DAIPermitGatherer: PermitGathererFunction = async (address, deadline, _, t
   }
 }
 
-const USDCPermitGatherer: PermitGathererFunction = async (address, deadline, _, token, library) => {
+const USDCPermitGatherer: PermitGathererFunction = async (address, deadline, approveAmount, library) => {
   const Permit = [
     { name: 'owner', type: 'address' },
     { name: 'spender', type: 'address' },
@@ -93,9 +104,13 @@ const USDCPermitGatherer: PermitGathererFunction = async (address, deadline, _, 
     name: 'USD Coin',
     version: '2',
   }
-  const USDC = new Contract(token.address, ['function nonces(address owner) view returns (uint256 nonce)'], library)
-  const nonce: BigNumber = await USDC.nonces(address)
-  const value = `0x${MAX_UINT256.toString(16)}`
+  const USDCContract = new Contract(
+    USDC.address,
+    ['function nonces(address owner) view returns (uint256 nonce)'],
+    library
+  )
+  const nonce: BigNumber = await USDCContract.nonces(address)
+  const value = `0x${approveAmount.toString(16)}`
   const message = {
     owner: address,
     spender: PERMIT_AND_CALL_ADDRESS,
@@ -117,13 +132,61 @@ const USDCPermitGatherer: PermitGathererFunction = async (address, deadline, _, 
   }
 }
 
+const UNIPermitGatherer: PermitGathererFunction = async (address, deadline, approveAmount, library) => {
+  const Permit = [
+    { name: 'owner', type: 'address' },
+    { name: 'spender', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'nonce', type: 'uint256' },
+    { name: 'deadline', type: 'uint256' },
+  ]
+  const domain = { name: 'Uniswap' }
+  const UNIContract = new Contract(
+    UNI.address,
+    ['function nonces(address holder) view returns (uint256 nonce)'],
+    library
+  )
+  const nonce: BigNumber = await UNIContract.nonces(address)
+  const value = `0x${approveAmount.toString(16)}`
+  const message = {
+    owner: address,
+    spender: PERMIT_AND_CALL_ADDRESS,
+    value,
+    nonce: await Promise.resolve(nonce.toNumber()).catch(() => nonce.toString()),
+    deadline,
+  }
+  const inputs = ['address', 'address', 'uint256', 'uint256', 'uint8', 'bytes32', 'bytes32']
+  return {
+    types: {
+      EIP712Domain: EIP712DomainWithoutVersion,
+      Permit,
+    },
+    domain,
+    message,
+    permitSelector: hexDataSlice(id(`permit(${inputs.join(',')})`), 0, 4),
+    getPermitData: ({ v, r, s }) =>
+      defaultAbiCoder.encode(inputs, [address, PERMIT_AND_CALL_ADDRESS, value, deadline, v, r, s]),
+  }
+}
+
 const permitGatherers: { [chainId: number]: { [tokenAddress: string]: PermitGathererFunction } } = {
   [ChainId.MAINNET]: {
-    '0x6B175474E89094C44Da98b954EedeAC495271d0F': DAIPermitGatherer,
-    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48': USDCPermitGatherer,
+    [DAI.address]: DAIPermitGatherer,
+    [USDC.address]: USDCPermitGatherer,
+    [UNI.address]: UNIPermitGatherer,
+  },
+  [ChainId.ROPSTEN]: {
+    [UNI.address]: UNIPermitGatherer,
+  },
+  [ChainId.RINKEBY]: {
+    [UNI.address]: UNIPermitGatherer,
+  },
+  [ChainId.GÖRLI]: {
+    [UNI.address]: UNIPermitGatherer,
   },
   [ChainId.KOVAN]: {
     '0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa': DAIPermitGatherer,
+    [UNI.address]: UNIPermitGatherer,
   },
 }
 
@@ -134,15 +197,14 @@ export function canPermit(token?: Token): boolean {
 export async function gatherPermit(
   address: string,
   deadline: number,
-  approveMax: boolean,
+  approveAmount: JSBI,
   token: Token,
   library: Web3Provider
 ): Promise<Permit> {
   const { permitSelector, getPermitData, domain, ...data } = await permitGatherers[token.chainId][token.address](
     address,
     deadline,
-    approveMax,
-    token,
+    approveAmount,
     library
   )
 

@@ -491,7 +491,13 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             permitData: '0x',
           }
         } else {
-          await gatherPermit(account as string, deadline, approveMax, tokens[Field.INPUT] as Token, library)
+          await gatherPermit(
+            account as string,
+            deadline,
+            approveMax ? MAX_UINT256 : parsed[Field.INPUT].raw,
+            tokens[Field.INPUT] as Token,
+            library
+          )
             .then((gatheredPermit) => {
               approved = true
               tryToManuallyApprove = false
