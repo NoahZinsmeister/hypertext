@@ -6,10 +6,10 @@ import { modifyUrlObjectForIPFS } from '../utils'
 export default function Redirect(): null {
   const { replace } = useRouter()
 
-  const { href, as } = modifyUrlObjectForIPFS('/buy')
+  const url = modifyUrlObjectForIPFS('/buy')
 
   useEffect(() => {
-    replace(href, as)
+    replace(url)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null

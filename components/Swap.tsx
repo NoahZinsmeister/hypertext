@@ -255,8 +255,8 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // clear url params
   useEffect(() => {
     if (Object.keys(query).length > 0) {
-      const { href, as } = modifyUrlObjectForIPFS(pathname)
-      replace(href, as, { shallow: true })
+      const url = modifyUrlObjectForIPFS(pathname)
+      replace(url, undefined, { shallow: true })
     }
   })
 
@@ -567,7 +567,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
 
         {!!!trade ? (
           <Link
-            {...modifyUrlObjectForIPFS({
+            href={modifyUrlObjectForIPFS({
               pathname: buy ? '/sell' : '/buy',
               query: {
                 ...(tokens[Field.INPUT]?.address ? { [QueryParameters.INPUT]: tokens[Field.INPUT]?.address } : {}),
