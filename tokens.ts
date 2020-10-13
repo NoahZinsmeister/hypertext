@@ -7,6 +7,7 @@ import { useOnchainToken } from './data'
 
 export const DAI = new Token(ChainId.MAINNET, '0x6B175474E89094C44Da98b954EedeAC495271d0F', 18, 'DAI', 'Dai Stablecoin')
 export const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD Coin')
+export const UNI = new Token(ChainId.MAINNET, '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', 18, 'UNI', 'Uniswap')
 
 export const DEFAULT_TOKENS = [
   ...Object.values(WETH),
@@ -19,6 +20,8 @@ export const DEFAULT_TOKENS = [
   new Token(ChainId.MAINNET, '0x5d3a536E4D6DbD6114cc1Ead35777bAB948E3643', 8, 'cDAI', 'Compound Dai'),
   new Token(ChainId.MAINNET, '0x06AF07097C9Eeb7fD685c692751D5C66dB49c215', 18, 'CHAI', 'Chai'),
   new Token(ChainId.MAINNET, '0x39AA39c021dfbaE8faC545936693aC917d5E7563', 8, 'cUSDC', 'Compound USD Coin'),
+  // uniswap
+  UNI,
   // compound
   new Token(ChainId.MAINNET, '0xc00e94Cb662C3520282E6f5717214004A7f26888', 18, 'COMP', 'Compound'),
   // maker
@@ -39,20 +42,19 @@ export function useAllTokens(): [Token[], ReturnType<typeof useLocalStorageToken
   const { chainId } = useWeb3React()
   const [tokens, { addToken, removeToken }] = useLocalStorageTokens()
 
-  return [
-    useMemo(() => {
-      const seen: { [address: string]: boolean } = {}
-      return DEFAULT_TOKENS.concat(tokens).filter((token) => {
-        if (token.chainId === chainId && !seen[token.address]) {
-          seen[token.address] = true
-          return true
-        } else {
-          return false
-        }
-      })
-    }, [tokens, chainId]),
-    { addToken, removeToken },
-  ]
+  const combinedTokens = useMemo(() => {
+    const seen: { [address: string]: boolean } = {}
+    return DEFAULT_TOKENS.concat(tokens).filter((token) => {
+      if (token.chainId === chainId && !seen[token.address]) {
+        seen[token.address] = true
+        return true
+      } else {
+        return false
+      }
+    })
+  }, [tokens, chainId])
+
+  return [combinedTokens, { addToken, removeToken }]
 }
 
 export function useTokenByAddressAndAutomaticallyAdd(tokenAddress?: string): Token | undefined {
