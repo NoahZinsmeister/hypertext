@@ -1,7 +1,6 @@
 import { useState, useLayoutEffect, useEffect } from 'react'
 import { NextComponentType } from 'next'
 import NextApp from 'next/app'
-import Head from 'next/head'
 import { ThemeProvider, CSSReset, ColorModeProvider } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
 import { Web3ReactProvider, useWeb3React } from '@web3-react/core'
@@ -63,10 +62,6 @@ export default class App extends NextApp {
     return (
       <>
         <Base />
-        <Head>
-          <title key="title">Hypertext</title>
-          <meta key="description" name="Description" content="A text-forward Uniswap interface." />
-        </Head>
         <Web3ReactProvider getLibrary={getLibrary}>
           <ThemeProvider theme={theme}>
             <CSSReset />
