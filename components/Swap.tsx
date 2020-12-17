@@ -257,7 +257,7 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   useEffect(() => {
     if (Object.keys(query).length > 0) {
       if (isIPFS) {
-        window.history.replaceState(null, '', `${pathname}.html`)
+        window.history.replaceState(null, '', `.${pathname}.html`)
       } else {
         replace(pathname, undefined, { shallow: true })
       }
