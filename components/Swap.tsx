@@ -25,6 +25,7 @@ import {
   QueryParameters,
   PERMIT_AND_CALL_ADDRESS,
   GAS_LIMIT_WHEN_MOCKING,
+  isIPFS,
 } from '../constants'
 import {
   useSlippage,
@@ -37,7 +38,7 @@ import {
 } from '../context'
 import TradeSummary from '../components/TradeSummary'
 import { canPermit, gatherPermit, Permit } from '../permits'
-import { modifyUrlObjectForIPFS } from '../utils'
+import { formatQueryParams } from '../utils'
 
 interface ErrorWithCode extends Error {
   code?: number
@@ -255,8 +256,11 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
   // clear url params
   useEffect(() => {
     if (Object.keys(query).length > 0) {
-      const { href: url, as } = modifyUrlObjectForIPFS(pathname)
-      replace(url, as, { shallow: true })
+      if (isIPFS) {
+        window.history.replaceState(null, '', `${pathname}.html`)
+      } else {
+        replace(pathname, undefined, { shallow: true })
+      }
     }
   })
 
@@ -551,6 +555,11 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
     }
   }
 
+  const formattedQueryParams = formatQueryParams({
+    ...(tokens[Field.INPUT]?.address ? { [QueryParameters.INPUT]: (tokens[Field.INPUT] as Token).address } : {}),
+    ...(tokens[Field.OUTPUT]?.address ? { [QueryParameters.OUTPUT]: (tokens[Field.OUTPUT] as Token).address } : {}),
+  })
+
   return (
     <Stack
       direction="column"
@@ -566,18 +575,12 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
         <SwapText>I want to</SwapText>
 
         {!!!trade ? (
-          <NextLink
-            {...modifyUrlObjectForIPFS({
-              pathname: buy ? '/sell' : '/buy',
-              query: {
-                ...(tokens[Field.INPUT]?.address ? { [QueryParameters.INPUT]: tokens[Field.INPUT]?.address } : {}),
-                ...(tokens[Field.OUTPUT]?.address ? { [QueryParameters.OUTPUT]: tokens[Field.OUTPUT]?.address } : {}),
-              },
-            })}
-            passHref
-          >
+          isIPFS ? (
             <Button
               as="a"
+              {...{
+                href: `./${buy ? 'sell' : 'buy'}.html${formattedQueryParams}`,
+              }}
               variant="ghost"
               variantColor={buy ? 'green' : 'red'}
               p="0.5rem"
@@ -588,7 +591,22 @@ export default function Swap({ buy }: { buy: boolean }): JSX.Element {
             >
               {buy ? 'Buy' : 'Sell'}
             </Button>
-          </NextLink>
+          ) : (
+            <NextLink href={`/${buy ? 'sell' : 'buy'}${formattedQueryParams}`} passHref>
+              <Button
+                as="a"
+                variant="ghost"
+                variantColor={buy ? 'green' : 'red'}
+                p="0.5rem"
+                mt="-0.2rem"
+                fontSize="3xl"
+                lineHeight={1}
+                height="min-content"
+              >
+                {buy ? 'Buy' : 'Sell'}
+              </Button>
+            </NextLink>
+          )
         ) : (
           <Button
             variant="solid"

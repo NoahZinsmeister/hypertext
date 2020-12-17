@@ -1,15 +1,17 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 
-import { modifyUrlObjectForIPFS } from '../utils'
+import { isIPFS } from '../constants'
 
 export default function Redirect(): null {
   const { replace } = useRouter()
 
-  const { href: url, as } = modifyUrlObjectForIPFS('/buy')
-
   useEffect(() => {
-    replace(url, as)
+    if (isIPFS) {
+      window.location.replace('./buy.html')
+    } else {
+      replace('/buy')
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null

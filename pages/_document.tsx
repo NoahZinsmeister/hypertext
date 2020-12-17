@@ -5,7 +5,6 @@ class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head>
-          <title key="title">Hypertext</title>
           <meta key="description" name="Description" content="A text-forward Uniswap interface." />
         </Head>
 

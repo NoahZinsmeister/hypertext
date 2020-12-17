@@ -26,6 +26,8 @@ import copy from 'copy-to-clipboard'
 import { COLOR, DEFAULT_DEADLINE, DEFAULT_SLIPPAGE, QueryParameters } from '../constants'
 import { useBodyKeyDown } from '../hooks'
 import { useApproveMax, useDeadline, useSlippage, useFirstToken, useSecondToken } from '../context'
+import { formatQueryParams } from '../utils'
+import { Token } from '@uniswap/sdk'
 
 export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }): JSX.Element {
   const { chainId } = useWeb3React()
@@ -44,23 +46,18 @@ export default function Settings({ isOpen, onClose }: { isOpen: boolean; onClose
   let permalink: string | null = null
   if (typeof chainId === 'number' && (firstToken || secondToken) && (pathname === '/buy' || pathname === '/sell')) {
     const permalinkParameters = {
-      [QueryParameters.CHAIN]: chainId,
+      [QueryParameters.CHAIN]: chainId.toString(),
       ...(pathname === '/buy'
         ? {
-            ...(firstToken ? { [QueryParameters.OUTPUT]: firstToken.address } : {}),
-            ...(secondToken ? { [QueryParameters.INPUT]: secondToken.address } : {}),
+            ...(firstToken ? { [QueryParameters.OUTPUT]: (firstToken as Token).address } : {}),
+            ...(secondToken ? { [QueryParameters.INPUT]: (secondToken as Token).address } : {}),
           }
         : {
-            ...(firstToken ? { [QueryParameters.INPUT]: firstToken.address } : {}),
-            ...(secondToken ? { [QueryParameters.OUTPUT]: secondToken.address } : {}),
+            ...(firstToken ? { [QueryParameters.INPUT]: (firstToken as Token).address } : {}),
+            ...(secondToken ? { [QueryParameters.OUTPUT]: (secondToken as Token).address } : {}),
           }),
     }
-    permalink = resolve(
-      'https://hypertext.finance',
-      `${pathname}?${Object.entries(permalinkParameters)
-        .map(([key, value]) => `${key}=${value}`)
-        .join('&')}`
-    )
+    permalink = resolve('https://hypertext.finance', `${pathname}${formatQueryParams(permalinkParameters)}`)
   }
 
   const [copied, setCopied] = useState(false)

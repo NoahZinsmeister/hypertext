@@ -18,6 +18,7 @@ import '../styles.css'
 import '@reach/combobox/styles.css'
 import { QueryParameters } from '../constants'
 import Loading from '../components/Loading'
+import Head from 'next/head'
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
@@ -61,6 +62,9 @@ export default class App extends NextApp {
     const { Component } = this.props
     return (
       <>
+        <Head>
+          <title key="title">Hypertext</title>
+        </Head>
         <Base />
         <Web3ReactProvider getLibrary={getLibrary}>
           <ThemeProvider theme={theme}>
