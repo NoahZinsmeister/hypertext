@@ -7,14 +7,16 @@ import { CHAIN_ID_NAMES } from '../utils'
 import { useEagerConnect, useQueryParameters, useUSDETHPrice } from '../hooks'
 import { useTransactions, useFirstToken, useSecondToken, useShowUSD } from '../context'
 import ColorBox from './ColorBox'
-import Account from './Account'
 import { TransactionToast } from './TransactionToast'
 import TokenBalance from './TokenBalance'
 import { WETH, ChainId, Token } from '@uniswap/sdk'
 import WalletConnect from './WalletConnect'
 import { QueryParameters } from '../constants'
+import Account from './Account'
 
 const Settings = dynamic(() => import('./Settings'))
+const UnstoppableDomains = dynamic(() => import('./UnstoppableDomains'), { ssr: false })
+
 
 export default function Layout({ children }: { children: ReactNode }): JSX.Element {
   const { chainId, account } = useWeb3React()
@@ -83,6 +85,37 @@ export default function Layout({ children }: { children: ReactNode }): JSX.Eleme
               : typeof requiredChainId === 'number' && requiredChainId !== ChainId.MAINNET) ? null : (
               <Box>
                 <WalletConnect />
+              </Box>
+            )
+          ) : (
+            [firstToken, secondToken]
+              .filter((token) => token)
+              .filter((token) => !token?.equals(WETH[token.chainId]))
+              .map((token) => (
+                <Box key={token?.address}>
+                  <TokenBalance token={token as Token} />
+                </Box>
+              ))
+          )}
+        </Stack>
+
+        <Stack
+          position="absolute"
+          top={58}
+          right={0}
+          m={isTestnet ? '1.5rem' : '1rem'}
+          mt={isTestnet ? '5rem' : '4.5rem'}
+          alignItems="flex-end"
+          spacing="1rem"
+          zIndex={2}
+        >
+          {typeof account !== 'string' ? (
+            !triedToEagerConnect ||
+            (typeof chainId === 'number'
+              ? chainId !== ChainId.MAINNET
+              : typeof requiredChainId === 'number' && requiredChainId !== ChainId.MAINNET) ? null : (
+              <Box>
+                <UnstoppableDomains />
               </Box>
             )
           ) : (
