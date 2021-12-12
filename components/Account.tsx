@@ -41,6 +41,7 @@ function ETHBalance(): JSX.Element {
 
 export default function Account({ triedToEagerConnect }: { triedToEagerConnect: boolean }): JSX.Element | null {
   const { active, error, activate, library, chainId, account, setError } = useWeb3React<Web3Provider>()
+  console.log(`Account / active, error, library, chainId, account`, active, error, library, chainId, account)
 
   // initialize metamask onboarding
   const onboarding = useRef<MetaMaskOnboarding>()
