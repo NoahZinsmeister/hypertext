@@ -1,11 +1,9 @@
-import { NetworkConnector } from '@web3-react/network-connector'
 import { InjectedConnector } from '@web3-react/injected-connector'
+import { NetworkConnector } from '@web3-react/network-connector'
 import { WalletConnectConnector } from '@web3-react/walletconnect-connector'
-
 import { INFURA_PREFIXES } from './utils'
 
-import { UAuthConnector } from '@uauth/web3-react'
-import type { AbstractConnector } from '@web3-react/abstract-connector'
+
 
 export function getNetwork(defaultChainId = 1): NetworkConnector {
   return new NetworkConnector({
@@ -29,22 +27,33 @@ export const walletconnect = new WalletConnectConnector({
   bridge: 'https://bridge.walletconnect.org',
 })
 
-// @see docs: https://github.com/unstoppabledomains/uauth/blob/main/examples/web3-react/README.md
-export const uauth = new UAuthConnector({
-  clientID: process.env.UAUTH_CLIENTID,
-  clientSecret: process.env.UAUTH_CLIENTSECRET,
-  redirectUri: process.env.UAUTH_REDIRECT_URI,
-  postLogoutRedirectUri: process.env.UAUTH_POSTREDIRECT_URI,
+/**
+ * Unstoppable Domains
+ */
 
-  scope: 'openid wallet',
+/**
+ * @note UD using Web3React does not callback active & account in useWeb3React() when logged in
+ * Furthermore for some reason, it triggers a 2nd provider opening after being logged
+ * e.g. Just after a login it then opens the Metamask authn window or WalletConnect QRCode
+ */
+// // @see docs: https://github.com/unstoppabledomains/uauth/blob/main/examples/web3-react/README.md
+// export const uauth = new UAuthConnector({
+//   clientID: process.env.UAUTH_CLIENTID,
+//   clientSecret: process.env.UAUTH_CLIENTSECRET,
+//   redirectUri: process.env.UAUTH_REDIRECT_URI,
+//   // postLogoutRedirectUri: process.env.UAUTH_POSTLOGOUT_REDIRECT_URI,
 
-  // Injected and walletconnect connectors are required.
-  // Existing implems: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#implementations
-  connectors: { injected, walletconnect },
-})
+//   shouldLoginWithRedirect: false,
+//   scope: 'openid wallet',
 
-export const connectors: Record<string, AbstractConnector> = {
-  injected,
-  walletconnect,
-  uauth,
-}
+//   // Injected and walletconnect connectors are required.
+//   // Existing implems: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md#implementations
+//   connectors: { injected, walletconnect },
+// })
+// console.log(`uauth`, uauth)
+
+// export const connectors: Record<string, AbstractConnector> = {
+//   injected,
+//   walletconnect,
+//   uauth,
+// }
