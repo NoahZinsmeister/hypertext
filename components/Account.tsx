@@ -1,22 +1,23 @@
-import { useState, useEffect, Suspense, useRef, useLayoutEffect } from 'react'
-import { Button, Stack, Box, IconButton } from '@chakra-ui/core'
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { Box, Button, IconButton, Stack } from '@chakra-ui/core'
 import { Web3Provider } from '@ethersproject/providers'
-import { useWeb3React } from '@web3-react/core'
-import { UserRejectedRequestError } from '@web3-react/injected-connector'
 import MetaMaskOnboarding from '@metamask/onboarding'
 import { TokenAmount } from '@uniswap/sdk'
-
-import { formatEtherscanLink, EtherscanType, shortenHex } from '../utils'
-import { injected, getNetwork } from '../connectors'
-import { useETHBalance } from '../data'
-import ErrorBoundary from './ErrorBoundary'
-import { useQueryParameters, useUSDETHPrice } from '../hooks'
+import { useWeb3React } from '@web3-react/core'
+import { UserRejectedRequestError } from '@web3-react/injected-connector'
+import { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { getNetwork, injected } from '../connectors'
 import { QueryParameters } from '../constants'
-import { useShowUSD } from '../context'
+import { useIsConnected, useShowUSD } from '../context'
+import { useETHBalance } from '../data'
+import { useQueryParameters, useUSDETHPrice } from '../hooks'
+import { uauth } from '../ud-auth'
+import { EtherscanType, formatEtherscanLink, shortenHex } from '../utils'
+import ErrorBoundary from './ErrorBoundary'
 
-function ETHBalance(): JSX.Element {
+function ETHBalance({ address }: { address: string }): JSX.Element {
   const { account } = useWeb3React()
-  const { data } = useETHBalance(account, true)
+  const { data } = useETHBalance(account || address, true)
 
   const [showUSD] = useShowUSD()
   const USDETHPrice = useUSDETHPrice()
@@ -34,13 +35,12 @@ function ETHBalance(): JSX.Element {
       Ξ{' '}
       {showUSD && USDETHPrice
         ? `$${(data as TokenAmount).multiply(USDETHPrice).toFixed(2, { groupSeparator: ',' })}`
-        : (data as TokenAmount).toSignificant(4, { groupSeparator: ',' })}
+        : (data as TokenAmount)?.toSignificant(4, { groupSeparator: ',' })}
     </Button>
   )
 }
-
 export default function Account({ triedToEagerConnect }: { triedToEagerConnect: boolean }): JSX.Element | null {
-  const { active, error, activate, library, chainId, account, setError } = useWeb3React<Web3Provider>()
+  const { active, error, activate, library, chainId, account, setError, deactivate } = useWeb3React<Web3Provider>()
 
   // initialize metamask onboarding
   const onboarding = useRef<MetaMaskOnboarding>()
@@ -85,11 +85,44 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
     }
   }, [library, account, chainId])
 
+  // UD States
+  const [isConnected, setIsConnected] = useIsConnected()
+  const [UDAccount, setUDAccount] = useState('')
+  const [UDAddress, setUDAddress] = useState('')
+
+  // UD on login
+  useEffect(() => {
+    async function fetchUser() {
+      try {
+        const UDUser = await uauth.user()
+        if (UDUser) {
+          setUDAccount(UDUser.sub)
+          setUDAddress(UDUser.wallet_address!)
+          setIsConnected(true)
+        }
+      } catch (error) {
+        setUDAccount('')
+        setUDAddress('')
+        setIsConnected(false)
+      }
+    }
+    fetchUser()
+  }, [isConnected, setIsConnected])
+
+  // UD logout
+  async function UDLogout() {
+    try {
+      await uauth.logout()
+      deactivate()
+      setIsConnected(false)
+    } catch (error) {}
+  }
+
   if (error) {
     return null
   } else if (!triedToEagerConnect) {
     return null
-  } else if (typeof account !== 'string') {
+  } else if (typeof account !== 'string' && UDAccount === '') {
     return (
       <Box>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
@@ -121,8 +154,13 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
   }
 
   let leftIcon: string | undefined
-  // check walletconnect first because sometime metamask can be installed but we're still using walletconnect
-  if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
+
+  // Check UD first because it overlaps both WC & MM
+  if (UDAccount !== '') {
+    leftIcon = 'unstoppabledomains'
+
+    // Check walletconnect in 2nd because sometime metamask can be installed but we're still using walletconnect
+  } else if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
     leftIcon = 'walletconnect'
   } else if (MetaMaskOnboarding.isMetaMaskInstalled()) {
     leftIcon = 'metamask'
@@ -158,7 +196,7 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
             </Button>
           }
         >
-          <ETHBalance />
+          <ETHBalance address={UDAddress} />
         </Suspense>
       </ErrorBoundary>
 
@@ -166,15 +204,29 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
         as="a"
         leftIcon={leftIcon ? (leftIcon as 'edit') : undefined}
         rightIcon="external-link"
-        style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+        style={UDAccount !== '' ? { borderRadius: 0 } : { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
         {...{
-          href: formatEtherscanLink(EtherscanType.Account, [chainId as number, account]),
+          href: formatEtherscanLink(EtherscanType.Account, [
+            chainId as number,
+            UDAddress !== '' ? UDAddress : account!,
+          ]),
           target: '_blank',
           rel: 'noopener noreferrer',
         }}
       >
-        {ENSName || `${shortenHex(account, 4)}`}
+        {UDAccount !== '' ? UDAccount : ENSName || `${shortenHex(account!, 4)}`}
       </Button>
+      {UDAccount !== '' ? (
+        <IconButton
+          variant="outline"
+          icon="small-close"
+          aria-label="Failed"
+          style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0, borderLeft: 'none' }}
+          onClick={UDLogout}
+        />
+      ) : (
+        ''
+      )}
     </Stack>
   )
 }

@@ -15,6 +15,20 @@ const customIcons = {
     // If the icon's viewBox is `0 0 24 24`, you can ignore `viewBox`
     viewBox: '0 0 300 185',
   },
+  unstoppabledomains: {
+    path: (
+      <g>
+        <path stroke="null" id="svg_3" fill="#2fe9ff" d="m64.55555,1l0,22l-64,26l64,-48z" />
+        <path
+          stroke="null"
+          id="UnstoppableDomains"
+          fill="#4c47f7"
+          d="m52.55555,0l0,38c0,11.0457 -8.9543,20 -20,20s-20,-8.9543 -20,-20l0,-16l12,-6.6l0,22.6c0,3.86599 3.13401,7 7,7s7,-3.13401 7,-7l0,-30.3l14,-7.7z"
+        />
+      </g>
+    ),
+    viewBox: '0 0 68 58',
+  },
   metamask: {
     path: (
       <>
