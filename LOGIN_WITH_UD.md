@@ -28,9 +28,9 @@
 | Video        | https://www.youtube.com/watch?v=xoYQrQWGwjc                                |
 | App url      | https://hypertext-lwu.netlify.app                                          |
 | Source Code  | https://github.com/somq/hypertext/tree/feat/login-with-unstoppable-domains |
-| PR Opened    | https://github.com/NoahZinsmeister/hypertext/pull/11                                                                           |
+| PR Opened    | https://github.com/NoahZinsmeister/hypertext/pull/11                       |
 | Discord id   | `soma#6972`                                                                |
-| email        |  `mail.clement@gmail.com`                                                                          |
+| email        | `mail.clement@gmail.com`                                                   |
 
 Tested with both `WalletConnect` & `Metamask` provider
 
@@ -87,4 +87,4 @@ yarn dev
 4. Set env variables in CI (or .env for local dev) according to this [example env file](.env.example)
 5. 🚀 Deploy
 
-> Note: This readme can be safely delete when integration is done.  
+> Note: This readme can be safely delete when integration is done.
