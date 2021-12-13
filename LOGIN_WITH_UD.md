@@ -5,7 +5,6 @@
   - [Abstract](#abstract)
   - [Quickstart](#quickstart)
   - [Additional](#additional)
-    - [Issues opened](#issues-opened)
   - [References & resources](#references--resources)
   - [Instructions for project maintainers](#instructions-for-project-maintainers)
 
@@ -58,15 +57,6 @@ yarn dev
 ```
 
 ## Additional
-
-### Issues opened
-
-> I had some trouble with the `Web3React` library, which led me to spend some time debugging the lib.  
-> In the end I implemented the generic library but 2 issues with a repro template.
-
-- No active & account callback when logged in
-- Provider authentication triggered after login
-  - Just after a login it then opens the Metamask authn window or WalletConnect QRCode
 
 ## References & resources
 
