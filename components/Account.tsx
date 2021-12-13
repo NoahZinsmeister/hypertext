@@ -206,7 +206,10 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
         rightIcon="external-link"
         style={UDAccount !== '' ? { borderRadius: 0 } : { borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
         {...{
-          href: formatEtherscanLink(EtherscanType.Account, [chainId as number, account!]),
+          href: formatEtherscanLink(EtherscanType.Account, [
+            chainId as number,
+            UDAddress !== '' ? UDAddress : account!,
+          ]),
           target: '_blank',
           rel: 'noopener noreferrer',
         }}
