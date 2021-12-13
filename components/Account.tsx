@@ -154,13 +154,16 @@ export default function Account({ triedToEagerConnect }: { triedToEagerConnect: 
   }
 
   let leftIcon: string | undefined
-  // check walletconnect first because sometime metamask can be installed but we're still using walletconnect
-  if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
+
+  // Check UD first because it overlaps both WC & MM
+  if (UDAccount !== '') {
+    leftIcon = 'unstoppabledomains'
+
+    // Check walletconnect in 2nd because sometime metamask can be installed but we're still using walletconnect
+  } else if ((library?.provider as { isWalletConnect: boolean })?.isWalletConnect) {
     leftIcon = 'walletconnect'
   } else if (MetaMaskOnboarding.isMetaMaskInstalled()) {
     leftIcon = 'metamask'
-  } else if (UDAccount !== '') {
-    leftIcon = 'walletconnect'
   }
 
   return (
