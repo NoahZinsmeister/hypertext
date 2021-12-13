@@ -95,6 +95,7 @@ const HypertextContext = createContext<
       firstToken: Token | undefined
       secondToken: Token | undefined
       showUSD: boolean
+      isConnected: boolean
       approveMax: boolean
       deadline: number
       slippage: number
@@ -105,6 +106,7 @@ const HypertextContext = createContext<
       setFirstToken: Dispatch<SetStateAction<Token | undefined>>
       setSecondToken: Dispatch<SetStateAction<Token | undefined>>
       setShowUSD: Dispatch<SetStateAction<boolean>>
+      setIsConnected: Dispatch<SetStateAction<boolean>>
       setApproveMax: Dispatch<SetStateAction<boolean>>
       setDeadline: Dispatch<SetStateAction<number>>
       setSlippage: Dispatch<SetStateAction<number>>
@@ -124,6 +126,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
   const [firstToken, setFirstToken] = useState<Token | undefined>()
   const [secondToken, setSecondToken] = useState<Token | undefined>()
   const [showUSD, setShowUSD] = useState<boolean>(false)
+  const [isConnected, setIsConnected] = useState<boolean>(false)
 
   // versioning
   const [version, setVersion] = useLocalStorage<number>(LocalStorageKeys.Version, NO_VERSION)
@@ -155,11 +158,23 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
     <HypertextContext.Provider
       value={useMemo(
         () => [
-          { firstToken, secondToken, showUSD, approveMax, deadline, slippage, transactions, tokens },
+          {
+            firstToken,
+            secondToken,
+            showUSD,
+            isConnected,
+            setIsConnected,
+            approveMax,
+            deadline,
+            slippage,
+            transactions,
+            tokens,
+          },
           {
             setFirstToken,
             setSecondToken,
             setShowUSD,
+            setIsConnected,
             setApproveMax,
             setDeadline,
             setSlippage,
@@ -171,6 +186,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
           firstToken,
           secondToken,
           showUSD,
+          isConnected,
           approveMax,
           deadline,
           slippage,
@@ -179,6 +195,7 @@ export default function Provider({ children }: { children: ReactNode }): JSX.Ele
           setFirstToken,
           setSecondToken,
           setShowUSD,
+          setIsConnected,
           setApproveMax,
           setDeadline,
           setSlippage,
@@ -205,6 +222,11 @@ export function useSecondToken(): [Token | undefined, ReturnType<typeof useHyper
 export function useShowUSD(): [boolean, ReturnType<typeof useHypertextContext>[1]['setShowUSD']] {
   const [{ showUSD }, { setShowUSD }] = useHypertextContext()
   return [showUSD, setShowUSD]
+}
+
+export function useIsConnected(): [boolean, ReturnType<typeof useHypertextContext>[1]['setIsConnected']] {
+  const [{ isConnected }, { setIsConnected }] = useHypertextContext()
+  return [isConnected, setIsConnected]
 }
 
 export function useApproveMax(): [boolean, () => void] {
