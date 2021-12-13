@@ -3,6 +3,7 @@
 - [Login With Unstoppable Domains implem](#login-with-unstoppable-domains-implem)
   - [Note to project maintainers](#note-to-project-maintainers)
   - [Abstract](#abstract)
+  - [Hackaton informations](#hackaton-informations)
   - [Quickstart](#quickstart)
   - [Additional](#additional)
   - [References & resources](#references--resources)
@@ -21,13 +22,15 @@
 
 > I'm not the original author of this project. I opened a PR on the repo so they can merge and publish it.
 
+## Hackaton informations
+
 |              |                                                                            |
 | ------------ | -------------------------------------------------------------------------- |
 | Project name | Formerly `Posther`, changed for `Hypertext` (`HypertextLWU` on ud).        |
 | Video        | https://www.youtube.com/watch?v=xoYQrQWGwjc                                |
 | App url      | https://hypertext-lwu.netlify.app                                          |
-| Source Code  | https://github.com/somq/hypertext/tree/feat/login-with-unstoppable-domains |
 | PR Opened    | https://github.com/NoahZinsmeister/hypertext/pull/11                       |
+| Source Code  | https://github.com/somq/hypertext/tree/feat/login-with-unstoppable-domains |
 | Discord id   | `soma#6972`                                                                |
 | email        | `mail.clement@gmail.com`                                                   |
 
