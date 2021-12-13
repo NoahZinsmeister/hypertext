@@ -24,9 +24,8 @@
 
 ## Hackaton informations
 
-|              |                                                                            |
-| ------------ | -------------------------------------------------------------------------- |
 | Project name | Formerly `Posther`, changed for `Hypertext` (`HypertextLWU` on ud).        |
+| ------------ | -------------------------------------------------------------------------- |
 | Video        | https://www.youtube.com/watch?v=xoYQrQWGwjc                                |
 | App url      | https://hypertext-lwu.netlify.app                                          |
 | PR Opened    | https://github.com/NoahZinsmeister/hypertext/pull/11                       |
